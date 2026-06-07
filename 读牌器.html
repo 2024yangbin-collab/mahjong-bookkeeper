@@ -12,7 +12,6 @@
   --bg: #f0f4e8; --card: #fff; --primary: #1a5c2a; --danger: #c62828;
   --safe: #2e7d32; --warn: #e65100; --text: #333; --text2: #888;
   --border: #d0d8c0; --radius: 10px;
-  --tile-size: 38px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
@@ -27,10 +26,18 @@ body {
   margin-bottom: 8px; position: sticky; top: 8px; z-index: 100;
 }
 .header h1 { font-size: 18px; letter-spacing: 2px; }
-.header .sub { font-size: 11px; opacity: 0.8; }
+
+/* Mode Tabs */
+.mode-tabs { display: flex; gap: 4px; margin-bottom: 8px; position: sticky; top: 70px; z-index: 99; }
+.mode-tab {
+  flex: 1; padding: 10px; border: none; border-radius: 8px;
+  background: var(--card); font-size: 14px; cursor: pointer; font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.mode-tab.active { background: var(--primary); color: #fff; }
 
 /* Player Tabs */
-.players { display: flex; gap: 4px; margin-bottom: 8px; position: sticky; top: 70px; z-index: 99; }
+.players { display: flex; gap: 4px; margin-bottom: 8px; }
 .player-tab {
   flex: 1; padding: 8px 4px; border: none; border-radius: 8px;
   background: var(--card); font-size: 12px; cursor: pointer;
@@ -40,7 +47,6 @@ body {
 .player-tab .wind { font-size: 16px; display: block; }
 .player-tab .count { font-size: 10px; opacity: 0.7; }
 
-/* Tile Input */
 .tile-section {
   background: var(--card); border-radius: var(--radius); padding: 10px;
   margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
@@ -48,41 +54,29 @@ body {
 .tile-section .label { font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 600; }
 .tile-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; justify-content: center; }
 .tile-btn {
-  width: var(--tile-size); height: var(--tile-size); border: 2px solid var(--border);
-  border-radius: 6px; background: #fafaf6; font-size: 16px; cursor: pointer;
+  width: 38px; height: 38px; border: 2px solid var(--border);
+  border-radius: 6px; background: #fafaf6; font-size: 15px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s; font-weight: 500;
 }
 .tile-btn:active { transform: scale(0.92); }
 .tile-btn.used { background: #e0e0e0; color: #bbb; border-color: #ddd; pointer-events: none; }
-.tile-btn:hover { border-color: var(--primary); background: #e8f5e9; }
+.tile-btn.selected { background: #1a5c2a; color: #fff; border-color: #0d3b18; }
 
-/* Action buttons */
 .action-row { display: flex; gap: 4px; margin: 6px 0; flex-wrap: wrap; justify-content: center; }
 .action-tag {
   padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border);
   background: #fff; font-size: 11px; cursor: pointer;
 }
-.action-tag.chi { border-color: #42a5f5; color: #42a5f5; }
-.action-tag.pon { border-color: #ff7043; color: #ff7043; }
-.action-tag.gang { border-color: #ab47bc; color: #ab47bc; }
 .action-tag.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-/* Analysis Panel */
-.analysis-card {
-  background: var(--card); border-radius: var(--radius); padding: 12px;
-  margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
-.analysis-card h3 { font-size: 14px; margin-bottom: 8px; }
 .range-bar { display: flex; gap: 3px; flex-wrap: wrap; margin: 6px 0; }
 .range-tile {
   width: 30px; height: 30px; border-radius: 5px; display: flex;
-  align-items: center; justify-content: center; font-size: 13px;
-  font-weight: 600; border: 2px solid transparent;
+  align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
 }
-.range-tile.likely-no { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
-.range-tile.maybe { background: #fff8e1; color: #e65100; border-color: #ffe082; }
-.range-tile.possible { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+.range-tile.likely-no { background: #ffebee; color: #c62828; border: 2px solid #ef9a9a; }
+.range-tile.possible { background: #e8f5e9; color: #2e7d32; border: 2px solid #a5d6a7; }
 .range-tile.unknown { background: #f5f5f5; color: #ccc; }
 
 .danger-list { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
@@ -91,7 +85,12 @@ body {
   background: #ffcdd2; color: #b71c1c; border: 2px solid #ef5350;
 }
 
-/* History */
+.analysis-card {
+  background: var(--card); border-radius: var(--radius); padding: 12px;
+  margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.analysis-card h3 { font-size: 14px; margin-bottom: 8px; }
+
 .history { margin-top: 8px; }
 .history-item {
   display: flex; gap: 6px; align-items: center; padding: 4px 8px;
@@ -99,12 +98,26 @@ body {
 }
 .history-item .del { color: #ccc; cursor: pointer; font-size: 14px; margin-left: auto; }
 
-/* Legend */
-.legend { display: flex; gap: 12px; font-size: 10px; color: var(--text2); margin-top: 6px; }
+.recommend-card {
+  background: linear-gradient(135deg,#fff8e1,#fff3e0);
+  border-radius: var(--radius); padding: 14px; margin: 8px 0;
+  border: 2px solid #ffe082;
+}
+.recommend-card .rec-tile {
+  font-size: 28px; font-weight: 700; color: #e65100; padding: 8px 16px;
+  background: #fff; border-radius: 12px; display: inline-block; margin: 4px;
+}
+.recommend-card .reason { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+.wait-count { font-size: 14px; font-weight: 700; }
+.wait-count.good { color: #2e7d32; }
+.wait-count.ok { color: #e65100; }
+.wait-count.bad { color: #999; }
+
+.legend { display: flex; gap: 12px; font-size: 10px; color: var(--text2); margin-top: 6px; flex-wrap: wrap; }
 .legend span { display: flex; align-items: center; gap: 4px; }
 .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
-.legend .dot.red { background: #ef9a9a; } .legend .dot.yellow { background: #ffe082; }
-.legend .dot.green { background: #a5d6a7; }
+.legend .dot.red { background: #ef9a9a; } .legend .dot.green { background: #a5d6a7; }
 
 .btn-row { display: flex; gap: 6px; margin: 8px 0; }
 .btn-sm {
@@ -117,315 +130,485 @@ body {
 </head>
 <body>
 
-<div class="header">
-  <h1>🀄 麻将读牌器</h1>
-  <div class="sub">打牌记录 → 自动推理对手牌型</div>
+<div class="header"><h1>🀄 麻将读牌器</h1></div>
+
+<!-- Mode Tabs -->
+<div class="mode-tabs">
+  <button class="mode-tab active" id="modeRead" onclick="switchMode('read')">🔍 读牌</button>
+  <button class="mode-tab" id="modeCalc" onclick="switchMode('calc')">🤖 算牌推荐</button>
 </div>
 
-<!-- Players -->
+<!-- ===== READ MODE ===== -->
+<div id="readMode">
 <div class="players" id="playerTabs">
   <button class="player-tab" data-p="0" onclick="switchPlayer(0)"><span class="wind">🀀</span>对家</button>
   <button class="player-tab active" data-p="1" onclick="switchPlayer(1)"><span class="wind">🀁</span>下家</button>
   <button class="player-tab" data-p="2" onclick="switchPlayer(2)"><span class="wind">🀂</span>上家</button>
   <button class="player-tab" data-p="3" onclick="switchPlayer(3)"><span class="wind">🀃</span>自家</button>
 </div>
-
-<!-- Tile Input -->
 <div class="tile-section">
-  <div class="label">🀙 万子</div>
-  <div class="tile-row" id="row-wan"></div>
-  <div class="label" style="margin-top:8px;">🀐 条子</div>
-  <div class="tile-row" id="row-tiao"></div>
-  <div class="label" style="margin-top:8px;">🀈 筒子</div>
-  <div class="tile-row" id="row-tong"></div>
-  <div class="label" style="margin-top:8px;">🀆 字牌</div>
-  <div class="tile-row" id="row-zi"></div>
-
+  <div class="label">🀙 万子</div><div class="tile-row" id="row-wan"></div>
+  <div class="label" style="margin-top:8px;">🀐 条子</div><div class="tile-row" id="row-tiao"></div>
+  <div class="label" style="margin-top:8px;">🀈 筒子</div><div class="tile-row" id="row-tong"></div>
+  <div class="label" style="margin-top:8px;">🀆 字牌</div><div class="tile-row" id="row-zi"></div>
   <div class="action-row">
-    <button class="action-tag" id="tag-discard" onclick="setAction('discard')">🀄 打出</button>
-    <button class="action-tag chi" id="tag-chi" onclick="setAction('chi')">🍽 吃 (上家)</button>
-    <button class="action-tag pon" id="tag-pon" onclick="setAction('pon')">🔴 碰</button>
-    <button class="action-tag gang" id="tag-gang" onclick="setAction('gang')">🟣 杠</button>
+    <button class="action-tag active" id="tag-discard" onclick="setAction('discard')">打出</button>
+    <button class="action-tag" id="tag-chi" onclick="setAction('chi')">🍽吃</button>
+    <button class="action-tag" id="tag-pon" onclick="setAction('pon')">🔴碰</button>
+    <button class="action-tag" id="tag-gang" onclick="setAction('gang')">🟣杠</button>
   </div>
 </div>
-
-<!-- Analysis -->
 <div class="analysis-card">
   <h3>📊 <span id="analysisPlayer">下家</span> 牌型推理</h3>
-
   <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">万子:</div>
   <div class="range-bar" id="range-wan"></div>
   <div style="font-size:12px;color:var(--text2);margin:6px 0 4px;">条子:</div>
   <div class="range-bar" id="range-tiao"></div>
   <div style="font-size:12px;color:var(--text2);margin:6px 0 4px;">筒子:</div>
   <div class="range-bar" id="range-tong"></div>
-
-  <div style="margin-top:10px;font-size:13px;font-weight:600;color:#c62828;">⚠️ 危险牌（大概率在等）:</div>
+  <div style="margin-top:10px;font-size:13px;font-weight:600;color:#c62828;">⚠️ 危险牌:</div>
   <div class="danger-list" id="dangerTiles"></div>
-
   <div style="margin-top:8px;font-size:12px;color:var(--text2);" id="playerSummary"></div>
-
   <div class="legend">
     <span><span class="dot red"></span> 大概率没有</span>
-    <span><span class="dot yellow"></span> 可能没有</span>
     <span><span class="dot green"></span> 可能还有</span>
   </div>
 </div>
-
-<!-- History -->
 <div class="tile-section">
   <div class="label">📝 <span id="historyPlayer">下家</span> 出牌记录</div>
   <div class="history" id="discardHistory"><div style="color:#ccc;text-align:center;font-size:12px;">暂无记录</div></div>
 </div>
-
 <div class="btn-row">
   <button class="btn-sm undo" onclick="undoLast()">↩ 撤销</button>
   <button class="btn-sm reset" onclick="resetAll()">🔄 重置</button>
 </div>
+</div><!-- end readMode -->
+
+<!-- ===== CALC MODE ===== -->
+<div id="calcMode" style="display:none;">
+<div class="tile-section">
+  <div class="label">🖐️ 点击牌输入手牌 (<span id="handCount">0</span>/14)</div>
+  <div class="label">🀙 万子</div><div class="tile-row" id="calc-wan"></div>
+  <div class="label" style="margin-top:8px;">🀐 条子</div><div class="tile-row" id="calc-tiao"></div>
+  <div class="label" style="margin-top:8px;">🀈 筒子</div><div class="tile-row" id="calc-tong"></div>
+  <div class="label" style="margin-top:8px;">🀆 字牌</div><div class="tile-row" id="calc-zi"></div>
+</div>
+<div id="calcResult" class="analysis-card">
+  <h3>🤖 推荐结果</h3>
+  <div style="text-align:center;color:#999;padding:20px;">点击牌输入13~14张手牌后自动分析</div>
+</div>
+<div class="btn-row">
+  <button class="btn-sm reset" onclick="resetHand()">🔄 清空手牌</button>
+</div>
+</div>
 
 <script>
-// ===== DATA =====
+// ===== TILE DATA =====
 const WAN = ['1万','2万','3万','4万','5万','6万','7万','8万','9万'];
 const TIAO = ['1条','2条','3条','4条','5条','6条','7条','8条','9条'];
 const TONG = ['1筒','2筒','3筒','4筒','5筒','6筒','7筒','8筒','9筒'];
 const ZI = ['东','南','西','北','中','发','白'];
-
-const SUITS = { wan: WAN, tiao: TIAO, tong: TONG };
+const ALL_TILES = [...WAN,'','', ...TIAO,'','', ...TONG,'','', ...ZI];
+const SUITS = { wan: WAN, tiao: TIAO, tong: TONG, zi: ZI };
+const SUIT_KEYS = ['wan','tiao','tong','zi'];
 const PLAYER_NAMES = ['对家','下家','上家','自家'];
 
-let currentPlayer = 1; // 默认下家
-let currentAction = 'discard';
+function tileIdx(t) {
+  if (WAN.includes(t)) return WAN.indexOf(t);
+  if (TIAO.includes(t)) return 9 + TIAO.indexOf(t);
+  if (TONG.includes(t)) return 18 + TONG.indexOf(t);
+  if (ZI.includes(t)) return 27 + ZI.indexOf(t);
+  return -1;
+}
+function tileByIdx(i) {
+  if (i < 9) return WAN[i];
+  if (i < 18) return TIAO[i-9];
+  if (i < 27) return TONG[i-18];
+  if (i < 34) return ZI[i-27];
+  return '';
+}
+function suitOf(i) {
+  if (i < 9) return 'wan';
+  if (i < 18) return 'tiao';
+  if (i < 27) return 'tong';
+  return 'zi';
+}
+function rankOf(i) { return (i % 9) + 1; }
+function isSuited(i) { return i < 27; }
 
-// 每人打出的牌 {player: [{tile, action, time}]}
-let discards = { 0:[], 1:[], 2:[], 3:[] };
-// 每人打出的牌 Set（用于快速判断）
-let discardedSets = { 0: new Set(), 1: new Set(), 2: new Set(), 3: new Set() };
-// 每人吃碰的牌
-let melds = { 0:[], 1:[], 2:[], 3:[] };
+let mode = 'read';
 
-// ===== RENDER TILE BUTTONS =====
-function buildTileRow(containerId, tiles, suitKey) {
-  const row = document.getElementById(containerId);
-  row.innerHTML = tiles.map(t => {
-    const cls = isDiscarded(t) ? 'tile-btn used' : 'tile-btn';
-    return `<button class="${cls}" onclick="clickTile('${t}', '${suitKey}')">${t}</button>`;
-  }).join('');
+// ===== READ MODE STATE =====
+let currentPlayer = 1, currentAction = 'discard';
+let discards = {0:[],1:[],2:[],3:[]};
+let discardedSets = {0:new Set(),1:new Set(),2:new Set(),3:new Set()};
+
+// ===== CALC MODE STATE =====
+let handTiles = [];
+let handCounts = new Array(34).fill(0);
+
+// ===== MODE SWITCH =====
+function switchMode(m) {
+  mode = m;
+  document.getElementById('modeRead').classList.toggle('active', m==='read');
+  document.getElementById('modeCalc').classList.toggle('active', m==='calc');
+  document.getElementById('readMode').style.display = m==='read'?'block':'none';
+  document.getElementById('calcMode').style.display = m==='calc'?'block':'none';
+  if (m === 'read') { renderAllTiles(); renderAnalysis(); renderHistory(); }
+  if (m === 'calc') { renderCalcTiles(); renderRecommendation(); }
 }
 
+// ===== READ MODE =====
 function renderAllTiles() {
-  buildTileRow('row-wan', WAN, 'wan');
-  buildTileRow('row-tiao', TIAO, 'tiao');
-  buildTileRow('row-tong', TONG, 'tong');
-  buildTileRow('row-zi', ZI, 'zi');
+  for (const [suit, tiles] of Object.entries(SUITS)) {
+    const row = document.getElementById('row-'+suit);
+    row.innerHTML = tiles.map(t => {
+      const cls = discardedSets[currentPlayer].has(t) ? 'tile-btn used' : 'tile-btn';
+      return `<button class="${cls}" onclick="clickTile('${t}','${suit}')">${t}</button>`;
+    }).join('');
+  }
 }
-
-function isDiscarded(tile) {
-  return discardedSets[currentPlayer].has(tile);
-}
-
 function clickTile(tile, suit) {
-  if (isDiscarded(tile)) return;
-
-  discards[currentPlayer].push({
-    tile: tile,
-    action: currentAction,
-    suit: suit,
-    time: Date.now()
-  });
+  if (discardedSets[currentPlayer].has(tile)) return;
+  discards[currentPlayer].push({tile, action: currentAction, suit, time: Date.now()});
   discardedSets[currentPlayer].add(tile);
-
-  renderAllTiles();
-  renderAnalysis();
-  renderHistory();
-  updatePlayerTabs();
+  renderAllTiles(); renderAnalysis(); renderHistory(); updatePlayerTabs();
 }
-
-// ===== ACTIONS =====
-function setAction(action) {
-  currentAction = action;
-  document.querySelectorAll('.action-tag').forEach(t => t.classList.remove('active'));
-  document.getElementById('tag-' + action).classList.add('active');
+function setAction(a) {
+  currentAction = a;
+  document.querySelectorAll('#readMode .action-tag').forEach(t => t.classList.remove('active'));
+  document.getElementById('tag-'+a).classList.add('active');
 }
-
-// ===== PLAYER SWITCH =====
 function switchPlayer(p) {
   currentPlayer = p;
-  document.querySelectorAll('.player-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`[data-p="${p}"]`).classList.add('active');
+  document.querySelectorAll('#readMode .player-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`#readMode [data-p="${p}"]`).classList.add('active');
   document.getElementById('analysisPlayer').textContent = PLAYER_NAMES[p];
   document.getElementById('historyPlayer').textContent = PLAYER_NAMES[p];
-  renderAllTiles();
-  renderAnalysis();
-  renderHistory();
+  renderAllTiles(); renderAnalysis(); renderHistory();
 }
-
 function updatePlayerTabs() {
-  for (let p=0; p<4; p++) {
-    const tab = document.querySelector(`[data-p="${p}"]`);
-    const count = discards[p].length;
-    tab.querySelector('.count').textContent = count ? `${count}张` : '';
+  for (let p=0;p<4;p++) {
+    const t = document.querySelector(`#readMode [data-p="${p}"]`);
+    const c = discards[p].length;
+    t.querySelector('.count').textContent = c?c+'张':'';
   }
 }
-
-// ===== ANALYSIS =====
-function analyzePlayer(p) {
-  const discarded = discards[p];
-  const playerSet = discardedSets[p];
-
-  if (discarded.length === 0) {
-    return { ranges: {}, dangers: [], summary: '暂无出牌记录' };
-  }
-
-  // 对每张打出的牌，推算 ±2 范围
-  const likelyNo = {}; // 大概率没有
-  const scores = {}; // 可能没有的计分
-
-  for (const suit of ['wan','tiao','tong']) {
-    likelyNo[suit] = new Set();
-    scores[suit] = {};
-    for (const t of SUITS[suit]) scores[suit][t] = 0;
-  }
-
-  for (const d of discarded) {
-    const tile = d.tile;
-    const suit = d.suit;
-    if (!SUITS[suit]) continue;
-
-    const idx = SUITS[suit].indexOf(tile);
-    if (idx === -1) continue;
-
-    // ±2 范围标记为"大概率没有"
-    for (let i = Math.max(0, idx-2); i <= Math.min(8, idx+2); i++) {
-      const t = SUITS[suit][i];
-      if (!playerSet.has(t)) {
-        likelyNo[suit].add(t);
-        scores[suit][t] += (3 - Math.abs(idx - i)); // 越近计分越高
-      }
-    }
-  }
-
-  // 危险牌：不在"大概率没有"范围、且不在已打出的牌中
-  const dangers = [];
-  for (const suit of ['wan','tiao','tong']) {
-    for (const t of SUITS[suit]) {
-      if (!playerSet.has(t) && !likelyNo[suit].has(t)) {
-        dangers.push(t);
-      }
-    }
-  }
-
-  // 生成总结
-  const noRanges = [];
-  for (const suit of ['wan','tiao','tong']) {
-    const nos = [...likelyNo[suit]].sort((a,b) => SUITS[suit].indexOf(a) - SUITS[suit].indexOf(b));
-    if (nos.length > 0) {
-      noRanges.push(`${['万','条','筒'][['wan','tiao','tong'].indexOf(suit)]}: ${nos[0]}~${nos[nos.length-1]}`);
-    }
-  }
-
-  let summary = '';
-  if (noRanges.length > 0) {
-    summary = `大概率没有: ${noRanges.join('; ')}`;
-  }
-  if (dangers.length > 0 && dangers.length <= 9) {
-    summary += `\n可能在等: ${dangers.join('、')}`;
-  }
-
-  return { ranges: likelyNo, dangers, summary, scores };
-}
-
 function renderAnalysis() {
-  const analysis = analyzePlayer(currentPlayer);
+  const p = currentPlayer;
+  const discarded = discards[p];
+  const pSet = discardedSets[p];
   const emptySet = new Set();
 
-  for (const suit of ['wan','tiao','tong']) {
-    const container = document.getElementById('range-' + suit);
-    const tiles = SUITS[suit];
-    const nos = analysis.ranges[suit] || emptySet;
-    const playerSet = discardedSets[currentPlayer];
+  if (discarded.length === 0) {
+    document.getElementById('playerSummary').textContent = '暂无出牌记录';
+    for (const s of ['wan','tiao','tong']) {
+      document.getElementById('range-'+s).innerHTML = SUITS[s].map(t => `<span class="range-tile unknown">${t}</span>`).join('');
+    }
+    document.getElementById('dangerTiles').innerHTML = '<span style="color:#999;font-size:12px;">暂无</span>';
+    return;
+  }
 
-    container.innerHTML = tiles.map(t => {
-      let cls = 'range-tile unknown';
-      if (playerSet.has(t)) {
-        cls = 'range-tile likely-no'; // 已打出
-      } else if (nos.has(t)) {
-        cls = 'range-tile likely-no'; // 大概率没有
-      } else {
-        cls = 'range-tile possible'; // 可能还有
+  const likelyNo = {wan:new Set(), tiao:new Set(), tong:new Set()};
+  const scores = {};
+
+  for (const d of discarded) {
+    if (!SUITS[d.suit]) continue;
+    const tiles = SUITS[d.suit];
+    const idx = tiles.indexOf(d.tile);
+    if (idx === -1) continue;
+    for (let i = Math.max(0,idx-2); i <= Math.min(8,idx+2); i++) {
+      if (!pSet.has(tiles[i])) {
+        likelyNo[d.suit].add(tiles[i]);
       }
+    }
+  }
+
+  const dangers = [];
+  for (const s of ['wan','tiao','tong']) {
+    for (const t of SUITS[s]) {
+      if (!pSet.has(t) && !likelyNo[s].has(t)) dangers.push(t);
+    }
+  }
+
+  for (const s of ['wan','tiao','tong']) {
+    document.getElementById('range-'+s).innerHTML = SUITS[s].map(t => {
+      let cls = 'range-tile unknown';
+      if (pSet.has(t) || likelyNo[s].has(t)) cls = 'range-tile likely-no';
+      else cls = 'range-tile possible';
       return `<span class="${cls}">${t}</span>`;
     }).join('');
   }
 
-  // 危险牌
-  const dangerDiv = document.getElementById('dangerTiles');
-  if (analysis.dangers.length === 0) {
-    dangerDiv.innerHTML = '<span style="color:#999;font-size:12px;">暂无明确危险牌</span>';
-  } else if (analysis.dangers.length <= 12) {
-    dangerDiv.innerHTML = analysis.dangers.map(t => `<span class="danger-tile">${t}</span>`).join('');
-  } else {
-    dangerDiv.innerHTML = '<span style="color:#999;font-size:12px;">出牌太少，范围太宽</span>';
-  }
+  const dd = document.getElementById('dangerTiles');
+  if (dangers.length === 0) dd.innerHTML = '<span style="color:#999;font-size:12px;">暂无明确危险牌</span>';
+  else if (dangers.length <= 15) dd.innerHTML = dangers.map(t => `<span class="danger-tile">${t}</span>`).join('');
+  else dd.innerHTML = '<span style="color:#999;font-size:12px;">出牌太少，范围太宽</span>';
 
-  document.getElementById('playerSummary').textContent = analysis.summary;
+  document.getElementById('playerSummary').textContent = dangers.length > 0 && dangers.length <= 15
+    ? `可能在等: ${dangers.join('、')}` : '';
 }
-
-// ===== HISTORY =====
 function renderHistory() {
   const container = document.getElementById('discardHistory');
-  const playerDiscards = discards[currentPlayer];
-  if (playerDiscards.length === 0) {
-    container.innerHTML = '<div style="color:#ccc;text-align:center;font-size:12px;">暂无记录</div>';
+  const pd = discards[currentPlayer];
+  if (!pd.length) { container.innerHTML = '<div style="color:#ccc;text-align:center;font-size:12px;">暂无记录</div>'; return; }
+  container.innerHTML = [...pd].reverse().map((d,i) => `
+    <div class="history-item">
+      <span>${d.action!=='discard'?'['+d.action+'] ':''}${d.tile}</span>
+      <span class="del" onclick="removeDiscard(${pd.length-1-i})">✕</span>
+    </div>`).join('');
+}
+function removeDiscard(idx) {
+  discards[currentPlayer].splice(idx,1);
+  discardedSets[currentPlayer] = new Set(discards[currentPlayer].map(d=>d.tile));
+  renderAllTiles(); renderAnalysis(); renderHistory(); updatePlayerTabs();
+}
+function undoLast() {
+  if (!discards[currentPlayer].length) return;
+  discards[currentPlayer].pop();
+  discardedSets[currentPlayer] = new Set(discards[currentPlayer].map(d=>d.tile));
+  renderAllTiles(); renderAnalysis(); renderHistory(); updatePlayerTabs();
+}
+function resetAll() {
+  if (!confirm('确定重置所有人数据？')) return;
+  discards = {0:[],1:[],2:[],3:[]};
+  discardedSets = {0:new Set(),1:new Set(),2:new Set(),3:new Set()};
+  renderAllTiles(); renderAnalysis(); renderHistory(); updatePlayerTabs();
+}
+
+// ===== CALC MODE =====
+function renderCalcTiles() {
+  for (const [suit, tiles] of Object.entries(SUITS)) {
+    const row = document.getElementById('calc-'+suit);
+    row.innerHTML = tiles.map(t => {
+      const idx = tileIdx(t);
+      const count = handCounts[idx];
+      let cls = 'tile-btn';
+      if (count >= 4) cls += ' used';
+      else if (count > 0) cls += ' selected';
+      const label = count > 1 ? `${t}x${count}` : t;
+      return `<button class="${cls}" onclick="toggleHandTile('${t}')">${label}</button>`;
+    }).join('');
+  }
+  document.getElementById('handCount').textContent = handTiles.length;
+}
+
+function toggleHandTile(tile) {
+  const idx = tileIdx(tile);
+  if (handCounts[idx] >= 4) return; // 最多4张
+  handCounts[idx]++;
+  handTiles.push(idx);
+  handTiles.sort((a,b)=>a-b);
+  if (handTiles.length > 14) {
+    // 超过14张，移除第一个
+    handCounts[handTiles[0]]--;
+    handTiles.shift();
+  }
+  renderCalcTiles();
+  if (handTiles.length >= 13) renderRecommendation();
+}
+
+function resetHand() {
+  handTiles = [];
+  handCounts = new Array(34).fill(0);
+  renderCalcTiles();
+  document.getElementById('calcResult').innerHTML = '<h3>🤖 推荐结果</h3><div style="text-align:center;color:#999;padding:20px;">点击牌输入13~14张手牌后自动分析</div>';
+}
+
+// ===== CORE ALGORITHM (from waittile.py + fan_calculator.py) =====
+function decompose(tiles) {
+  // 返回所有可能的分解方案 [{melds:[[t1,t2,t3],...], pair:[t1,t2]}, ...]
+  // 简化版：贪心找搭子
+  const results = [];
+  const counter = new Array(34).fill(0);
+  for (const t of tiles) counter[t]++;
+
+  // 尝试每种对子作为将牌
+  for (let pair = 0; pair < 34; pair++) {
+    if (counter[pair] < 2) continue;
+    const c = [...counter];
+    c[pair] -= 2;
+
+    const melds = [];
+    let ok = true;
+
+    // 先找刻子
+    for (let i = 0; i < 34; i++) {
+      while (c[i] >= 3) {
+        melds.push([i,i,i]);
+        c[i] -= 3;
+      }
+    }
+
+    // 再找顺子
+    for (let i = 0; i < 27; i++) {
+      const r = rankOf(i);
+      if (r <= 7) {
+        while (c[i] > 0 && c[i+1] > 0 && c[i+2] > 0) {
+          melds.push([i,i+1,i+2]);
+          c[i]--; c[i+1]--; c[i+2]--;
+        }
+      }
+    }
+
+    // 检查是否所有牌都用了
+    if (c.every(x => x === 0)) {
+      results.push({melds, pair});
+    }
+  }
+  return results;
+}
+
+function isWin(tiles) {
+  if (tiles.length !== 14) return false;
+  return decompose(tiles).length > 0;
+}
+
+function countWaits(hand13) {
+  // 基于 waittile.py 的 get_wait_candidates 方法
+  // 返回 {waitTiles: [idx,...], count: N}
+  const waits = [];
+  for (let tile = 0; tile < 34; tile++) {
+    const testTiles = [...hand13, tile].sort((a,b)=>a-b);
+    if (isWin(testTiles)) {
+      waits.push(tile);
+    }
+  }
+  return waits;
+}
+
+function getWaitCandidates(hand13) {
+  // 快速候选：手牌±2范围 + 对子 + 相邻牌
+  const candidates = new Set();
+  for (const t of hand13) {
+    candidates.add(t); // 摸第2张凑对子
+    if (isSuited(t)) {
+      const r = rankOf(t);
+      if (r > 1) candidates.add(t-1);
+      if (r < 9) candidates.add(t+1);
+      if (r > 2) candidates.add(t-2);
+      if (r < 8) candidates.add(t+2);
+    }
+  }
+  return [...candidates].filter(i => i >= 0 && i < 34).sort((a,b)=>a-b);
+}
+
+function analyzeHand() {
+  if (handTiles.length < 13) return null;
+
+  // 如果14张，分析扔每张的效果
+  if (handTiles.length === 14) {
+    const results = [];
+    const seen = new Set();
+    for (let i = 0; i < handTiles.length; i++) {
+      const discard = handTiles[i];
+      if (seen.has(discard)) continue;
+      seen.add(discard);
+
+      const remaining = handTiles.filter((_,j) => j !== i);
+      const waits = countWaits(remaining);
+      const candidates = getWaitCandidates(remaining);
+
+      results.push({
+        discard,
+        remaining,
+        waits,
+        waitCount: waits.length,
+        candidates,
+        candidateCount: candidates.length
+      });
+    }
+
+    // 排序：等牌最多的排最前
+    results.sort((a,b) => b.waitCount - a.waitCount || b.candidateCount - a.candidateCount);
+
+    const best = results[0];
+    const ranks = results.slice(0, 8);
+
+    return {
+      type: '14tiles',
+      bestDiscard: best.discard,
+      bestWaits: best.waits,
+      bestWaitCount: best.waitCount,
+      allResults: ranks,
+      handTiles: [...handTiles]
+    };
+  }
+
+  // 13张，计算等牌
+  if (handTiles.length === 13) {
+    const waits = countWaits(handTiles);
+    const candidates = getWaitCandidates(handTiles);
+    return {
+      type: '13tiles',
+      waits,
+      waitCount: waits.length,
+      candidates,
+      candidateCount: candidates.length,
+      handTiles: [...handTiles]
+    };
+  }
+
+  return null;
+}
+
+function renderRecommendation() {
+  const result = analyzeHand();
+  const container = document.getElementById('calcResult');
+  if (!result) {
+    container.innerHTML = '<h3>🤖 推荐结果</h3><div style="text-align:center;color:#999;padding:20px;">请至少输入13张牌</div>';
     return;
   }
 
-  const actionIcons = { discard: '', chi: '🍽', pon: '🔴', gang: '🟣' };
-  container.innerHTML = [...playerDiscards].reverse().map((d,i) => `
-    <div class="history-item">
-      <span>${actionIcons[d.action]||''} ${d.tile}</span>
-      ${d.action !== 'discard' ? `<span style="font-size:10px;color:#999;">${d.action}</span>` : ''}
-      <span class="del" onclick="removeDiscard(${playerDiscards.length-1-i})">✕</span>
-    </div>
-  `).join('');
-}
+  if (result.type === '13tiles') {
+    const wc = result.waitCount;
+    let cls = wc >= 8 ? 'good' : wc >= 4 ? 'ok' : 'bad';
+    let status = wc >= 8 ? '✅ 已听牌' : wc > 0 ? '⚠️ 已听牌（等牌较少）' : '❌ 未听牌';
 
-function removeDiscard(idx) {
-  const removed = discards[currentPlayer][idx];
-  discards[currentPlayer].splice(idx, 1);
-  // 重建 set
-  discardedSets[currentPlayer] = new Set(discards[currentPlayer].map(d => d.tile));
-  renderAllTiles();
-  renderAnalysis();
-  renderHistory();
-  updatePlayerTabs();
-}
+    container.innerHTML = `
+      <h3>🤖 手牌分析</h3>
+      <div style="text-align:center;margin:12px 0;">
+        <span class="wait-count ${cls}" style="font-size:24px;">${status}</span>
+        ${result.waitCount > 0 ? `<div style="margin-top:6px;">等牌: ${result.waits.map(i=>tileByIdx(i)).join(' ')}</div>` : ''}
+      </div>
+    `;
+  } else {
+    const best = result.allResults[0];
+    const wc = best.waitCount;
+    let cls = wc >= 8 ? 'good' : wc >= 4 ? 'ok' : 'bad';
 
-// ===== UNDO / RESET =====
-function undoLast() {
-  if (discards[currentPlayer].length === 0) return;
-  discards[currentPlayer].pop();
-  discardedSets[currentPlayer] = new Set(discards[currentPlayer].map(d => d.tile));
-  renderAllTiles();
-  renderAnalysis();
-  renderHistory();
-  updatePlayerTabs();
-}
+    let html = `
+      <h3>🤖 推荐出牌</h3>
+      <div class="recommend-card" style="text-align:center;">
+        <div style="font-size:13px;color:var(--text2);">建议打出</div>
+        <div class="rec-tile">${tileByIdx(best.discard)}</div>
+        <div class="reason">
+          打出后可等 <span class="wait-count ${cls}">${best.waitCount} 张</span> 牌
+          ${wc >= 8 ? ' → 已听牌' : wc > 0 ? ' → 接近听牌' : ' → 还需调整'}
+        </div>
+      </div>
 
-function resetAll() {
-  if (!confirm('确定重置所有人数据？')) return;
-  discards = { 0:[], 1:[], 2:[], 3:[] };
-  discardedSets = { 0:new Set(), 1:new Set(), 2:new Set(), 3:new Set() };
-  renderAllTiles();
-  renderAnalysis();
-  renderHistory();
-  updatePlayerTabs();
+      <h4 style="margin-top:12px;">📊 各选项对比 (扔→等牌数)</h4>
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+    `;
+
+    for (const r of result.allResults) {
+      let cls2 = r.waitCount >= 8 ? 'good' : r.waitCount >= 4 ? 'ok' : 'bad';
+      html += `<tr style="border-bottom:1px solid #eee;">
+        <td style="padding:4px;">${r.discard === best.discard ? '👉' : ''} 扔 <b>${tileByIdx(r.discard)}</b></td>
+        <td style="padding:4px;text-align:right;" class="wait-count ${cls2}">${r.waitCount}张</td>
+        <td style="padding:4px;font-size:11px;color:#999;">${r.waits.map(i=>tileByIdx(i)).join(' ')}</td>
+      </tr>`;
+    }
+
+    html += '</table>';
+    container.innerHTML = html;
+  }
 }
 
 // ===== INIT =====
 renderAllTiles();
 renderAnalysis();
-setAction('discard');
-document.getElementById('tag-discard').classList.add('active');
 </script>
 </body>
 </html>
