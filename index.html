@@ -622,6 +622,11 @@ body {
     </button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
   </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0;">
+    <span id="autoBackupBadge" style="font-size:11px;padding:3px 10px;border-radius:10px;background:#e8f5e9;color:#2e7d32;">🤖 自动备份已开启</span>
+    <button id="toggleAutoBackupBtn" onclick="toggleAutoBackup()" style="font-size:10px;background:none;border:1px solid #ccc;border-radius:8px;padding:2px 8px;cursor:pointer;color:#999;">关闭</button>
+  </div>
+  <div id="backupStatus" class="data-stats" style="margin-top:2px;"></div>
   <div id="dataStats" class="data-stats"></div>
 
   <div class="section-title">📋 今日记录</div>
@@ -700,6 +705,8 @@ body {
 <script>
 // ========== DATA LAYER ==========
 const STORAGE_KEY = 'mj_accounting_records';
+const BACKUP_DATE_KEY = 'mj_last_backup_date';
+const AUTO_BACKUP_KEY = 'mj_auto_backup_enabled';
 
 function loadRecords() {
   try {
@@ -716,6 +723,109 @@ function saveRecords(records) {
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ========== AUTO BACKUP ==========
+function isAutoBackupEnabled() {
+  const val = localStorage.getItem(AUTO_BACKUP_KEY);
+  return val === null ? true : val === 'true';  // 默认开启
+}
+
+function setAutoBackupEnabled(enabled) {
+  localStorage.setItem(AUTO_BACKUP_KEY, String(enabled));
+}
+
+function getLastBackupDate() {
+  return localStorage.getItem(BACKUP_DATE_KEY) || '';
+}
+
+function recordBackup() {
+  const today = todayStr();
+  localStorage.setItem(BACKUP_DATE_KEY, today);
+}
+
+function autoBackup(forceToast = false) {
+  if (!isAutoBackupEnabled()) return;
+  if (records.length === 0) return;
+
+  const lastBackup = getLastBackupDate();
+  const today = todayStr();
+
+  // 今天已备份，不重复
+  if (lastBackup === today) return;
+
+  // 执行自动备份（静默下载）
+  try {
+    const exportObj = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      totalRecords: records.length,
+      records: records
+    };
+    const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const now = new Date();
+    const filename = `麻将馆记账_自动备份_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.json`;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    recordBackup();
+    updateBackupStatus();
+
+    if (forceToast) {
+      showToast('🤖 每日自动备份完成 ✅');
+    }
+    console.log('🤖 自动备份完成:', filename);
+  } catch (e) {
+    console.warn('自动备份失败:', e);
+  }
+}
+
+function toggleAutoBackup() {
+  const current = isAutoBackupEnabled();
+  setAutoBackupEnabled(!current);
+  updateBackupStatus();
+  const msg = !current ? '✅ 自动备份已开启' : '⏸️ 自动备份已关闭';
+  showToast(msg);
+}
+
+function updateBackupStatus() {
+  const statusEl = document.getElementById('backupStatus');
+  const badgeEl = document.getElementById('autoBackupBadge');
+  const toggleBtn = document.getElementById('toggleAutoBackupBtn');
+
+  const enabled = isAutoBackupEnabled();
+  const lastBackup = getLastBackupDate();
+
+  // Badge
+  if (enabled) {
+    badgeEl.innerHTML = '🤖 自动备份已开启';
+    badgeEl.style.background = '#e8f5e9';
+    badgeEl.style.color = '#2e7d32';
+    toggleBtn.textContent = '关闭';
+  } else {
+    badgeEl.innerHTML = '⏸️ 自动备份已暂停';
+    badgeEl.style.background = '#fff3e0';
+    badgeEl.style.color = '#e65100';
+    toggleBtn.textContent = '开启';
+  }
+
+  // Status text
+  if (lastBackup) {
+    const days = Math.floor((new Date() - new Date(lastBackup)) / 86400000);
+    if (days === 0) {
+      statusEl.innerHTML = '✅ 今日已自动备份';
+    } else {
+      statusEl.innerHTML = `⚠️ 上次备份：${lastBackup}（${days}天前）`;
+    }
+  } else {
+    statusEl.innerHTML = '📌 尚未自动备份，打开页面时将自动执行';
+  }
 }
 
 // ========== STATE ==========
@@ -1135,6 +1245,8 @@ function exportData() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  recordBackup();
+  updateBackupStatus();
   showToast('📤 备份文件已下载');
 }
 
@@ -1195,6 +1307,9 @@ function init() {
   updateMonthLabel();
   updateDashboard();
   updateDataStats();
+  updateBackupStatus();
+  // 每次打开页面检查是否需要自动备份（>24h自动执行）
+  setTimeout(() => { autoBackup(false); }, 1500);
 }
 
 init();
