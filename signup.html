@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#8b4513">
+<title>长沙麻将 · 线上组局报名</title>
+<style>
+:root {
+  --bg: #f5f0e8;
+  --card: #fff;
+  --primary: #8b4513;
+  --primary-light: #a0522d;
+  --text: #333;
+  --text-secondary: #666;
+  --border: #e0d5c7;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --income: #2e7d32;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 32px 0;
+}
+
+.header {
+  background: linear-gradient(135deg, #5d2e0c, #8b4513);
+  color: #fff;
+  padding: 28px 20px 24px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.header p {
+  font-size: 14px;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+
+.card h2 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--primary);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.form-group .hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  background: #fafafa;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #fafafa;
+  user-select: none;
+}
+
+.chip.selected {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.privacy-box {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  padding: 12px;
+  background: #faf6f0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.privacy-box input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #5d2e0c, var(--primary));
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.success-panel {
+  display: none;
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.success-panel.show { display: block; }
+
+.success-panel .icon { font-size: 56px; margin-bottom: 12px; }
+.success-panel h2 { font-size: 20px; margin-bottom: 8px; color: var(--income); }
+.success-panel p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+.form-panel.hidden { display: none; }
+
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.toast.show { opacity: 1; }
+
+.footer-note {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 8px 16px 0;
+  line-height: 1.6;
+}
+
+.tag-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.tag {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 12px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🀄 长沙麻将 · 线上组局</h1>
+  <p>填写报名信息，老板会主动联系你组局<br>信息仅用于麻将组局安排，不会用于其他用途</p>
+  <div class="tag-row">
+    <span class="tag">抖音</span>
+    <span class="tag">快手</span>
+    <span class="tag">美团</span>
+    <span class="tag">朋友推荐</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+  <div class="form-panel" id="formPanel">
+    <div class="card">
+      <h2>📝 基本信息</h2>
+
+      <div class="form-group">
+        <label>昵称 / 称呼 *</label>
+        <input type="text" id="name" placeholder="如：小张、李哥" maxlength="20">
+      </div>
+
+      <div class="form-group">
+        <label>联系方式 *</label>
+        <input type="text" id="contact" placeholder="微信号或手机号" maxlength="50">
+        <div class="hint">请填写真实微信号，方便老板添加联系</div>
+      </div>
+
+      <div class="form-group">
+        <label>联系类型</label>
+        <div class="chip-group" id="contactTypeChips">
+          <span class="chip selected" data-value="wechat">微信</span>
+          <span class="chip" data-value="phone">手机</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🎯 组局需求</h2>
+
+      <div class="form-group">
+        <label>想打的时间（可多选）</label>
+        <div class="chip-group" id="timeChips">
+          <span class="chip" data-value="工作日上午">工作日上午</span>
+          <span class="chip" data-value="工作日下午">工作日下午</span>
+          <span class="chip" data-value="工作日晚上">工作日晚上</span>
+          <span class="chip" data-value="周末白天">周末白天</span>
+          <span class="chip" data-value="周末晚上">周末晚上</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>希望日期（选填）</label>
+        <input type="date" id="gameDate">
+      </div>
+
+      <div class="form-group">
+        <label>几人局</label>
+        <div class="chip-group" id="playersChips">
+          <span class="chip selected" data-value="4">4人局</span>
+          <span class="chip" data-value="3">3人局</span>
+          <span class="chip" data-value="2">2人缺角</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>水平（选填）</label>
+        <div class="chip-group" id="levelChips">
+          <span class="chip" data-value="新手">新手</span>
+          <span class="chip" data-value="会打">会打</span>
+          <span class="chip selected" data-value="熟练">熟练</span>
+          <span class="chip" data-value="老手">老手</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>备注（选填）</label>
+        <textarea id="note" placeholder="如：只打下午、希望无烟环境、从抖音看到的"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📣 你从哪看到的？</h2>
+      <div class="chip-group" id="sourceChips">
+        <span class="chip" data-value="抖音">抖音</span>
+        <span class="chip" data-value="快手">快手</span>
+        <span class="chip" data-value="美团">美团</span>
+        <span class="chip" data-value="朋友推荐">朋友推荐</span>
+        <span class="chip selected" data-value="其他">其他</span>
+      </div>
+    </div>
+
+    <div class="privacy-box">
+      <input type="checkbox" id="privacyAgree">
+      <label for="privacyAgree">
+        我已阅读并同意：自愿提供以上信息，仅用于长沙麻将组局联系与安排；可随时联系老板删除我的信息。
+      </label>
+    </div>
+
+    <button class="btn-submit" id="submitBtn" onclick="submitSignup()">提交报名</button>
+
+    <div class="footer-note">
+      提交后请保持微信畅通，老板一般在 24 小时内联系你
+    </div>
+  </div>
+
+  <div class="success-panel" id="successPanel">
+    <div class="icon">✅</div>
+    <h2>报名成功！</h2>
+    <p id="successMsg">我们已收到你的报名信息，请留意微信好友申请。</p>
+    <p style="margin-top:12px;font-size:13px;">报名编号：<strong id="signupId"></strong></p>
+    <button class="btn-submit" style="margin-top:20px;background:#666;" onclick="resetForm()">再报一局</button>
+  </div>
+</div>
+
+<script>
+// ========== 老板配置（部署后按需修改）==========
+const CONFIG = {
+  // 可选：填写 webhook 地址，客户报名后会自动推送到你的飞书/企业微信/自建接口
+  // 示例：飞书机器人、企业微信群机器人、或 n8n / 腾讯云函数 等
+  webhookUrl: '',
+
+  // 若未配置 webhook，可填写你的微信号，提交失败时提示客户直接加你
+  ownerWechat: '',
+
+  shopName: '长沙麻将组局'
+};
+
+const STORAGE_KEY = 'mj_signup_leads';
+
+// ========== 工具 ==========
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ========== Chip 选择逻辑 ==========
+function setupChips(containerId, options) {
+  const container = document.getElementById(containerId);
+  container.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (options.multi) {
+        chip.classList.toggle('selected');
+      } else {
+        container.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+      }
+    });
+  });
+}
+
+function getSelectedChips(containerId) {
+  return Array.from(document.getElementById(containerId).querySelectorAll('.chip.selected'))
+    .map(c => c.dataset.value);
+}
+
+function getSingleChip(containerId) {
+  const selected = document.getElementById(containerId).querySelector('.chip.selected');
+  return selected ? selected.dataset.value : '';
+}
+
+// ========== 存储 ==========
+function loadLeads() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLeads(leads) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+}
+
+// ========== Webhook 推送 ==========
+async function pushToWebhook(lead) {
+  if (!CONFIG.webhookUrl) return { ok: false, skipped: true };
+
+  try {
+    const resp = await fetch(CONFIG.webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        msg_type: 'text',
+        content: {
+          text: formatLeadText(lead)
+        },
+        lead: lead
+      })
+    });
+    return { ok: resp.ok };
+  } catch (e) {
+    console.warn('Webhook push failed:', e);
+    return { ok: false, error: e };
+  }
+}
+
+function formatLeadText(lead) {
+  return [
+    `【新组局报名】${CONFIG.shopName}`,
+    `昵称：${lead.name}`,
+    `联系方式：${lead.contact}（${lead.contactType === 'phone' ? '手机' : '微信'}）`,
+    `时间偏好：${lead.preferredTimes.join('、') || '未填'}`,
+    `希望日期：${lead.gameDate || '未定'}`,
+    `几人局：${lead.players}人`,
+    `水平：${lead.level}`,
+    `来源：${lead.source}`,
+    `备注：${lead.note || '无'}`,
+    `编号：${lead.id}`,
+    `时间：${new Date(lead.createdAt).toLocaleString('zh-CN')}`
+  ].join('\n');
+}
+
+// ========== 提交 ==========
+async function submitSignup() {
+  const name = document.getElementById('name').value.trim();
+  const contact = document.getElementById('contact').value.trim();
+  const privacyAgree = document.getElementById('privacyAgree').checked;
+
+  if (!name) { showToast('请填写昵称'); return; }
+  if (!contact) { showToast('请填写微信号或手机号'); return; }
+  if (!privacyAgree) { showToast('请勾选隐私同意'); return; }
+
+  const lead = {
+    id: genId(),
+    name: name,
+    contact: contact,
+    contactType: getSingleChip('contactTypeChips') || 'wechat',
+    preferredTimes: getSelectedChips('timeChips'),
+    gameDate: document.getElementById('gameDate').value || '',
+    players: parseInt(getSingleChip('playersChips') || '4', 10),
+    level: getSingleChip('levelChips') || '',
+    source: getSingleChip('sourceChips') || '其他',
+    note: document.getElementById('note').value.trim(),
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  const leads = loadLeads();
+  leads.unshift(lead);
+  saveLeads(leads);
+
+  const webhookResult = await pushToWebhook(lead);
+
+  btn.disabled = false;
+  btn.textContent = '提交报名';
+
+  document.getElementById('formPanel').classList.add('hidden');
+  document.getElementById('successPanel').classList.add('show');
+  document.getElementById('signupId').textContent = lead.id;
+
+  let msg = '我们已收到你的报名信息，请留意微信好友申请。';
+  if (webhookResult.skipped && CONFIG.ownerWechat) {
+    msg += ` 也可主动添加老板微信：${CONFIG.ownerWechat}`;
+  } else if (!webhookResult.ok && !webhookResult.skipped) {
+    msg = '报名已记录。若长时间未联系，请通过抖音/快手私信老板。';
+    if (CONFIG.ownerWechat) msg += ` 或添加微信：${CONFIG.ownerWechat}`;
+  }
+  document.getElementById('successMsg').textContent = msg;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm() {
+  document.getElementById('name').value = '';
+  document.getElementById('contact').value = '';
+  document.getElementById('gameDate').value = '';
+  document.getElementById('note').value = '';
+  document.getElementById('privacyAgree').checked = false;
+
+  document.querySelectorAll('#timeChips .chip').forEach(c => c.classList.remove('selected'));
+
+  document.getElementById('formPanel').classList.remove('hidden');
+  document.getElementById('successPanel').classList.remove('show');
+}
+
+// ========== URL 来源参数（方便抖音/快手放不同链接统计）==========
+function applySourceFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const src = params.get('from');
+  if (!src) return;
+  const map = { douyin: '抖音', kuaishou: '快手', meituan: '美团', friend: '朋友推荐' };
+  const label = map[src] || src;
+  document.querySelectorAll('#sourceChips .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === label);
+  });
+}
+
+// ========== INIT ==========
+setupChips('contactTypeChips', { multi: false });
+setupChips('timeChips', { multi: true });
+setupChips('playersChips', { multi: false });
+setupChips('levelChips', { multi: false });
+setupChips('sourceChips', { multi: false });
+applySourceFromUrl();
+</script>
+
+</body>
+</html>

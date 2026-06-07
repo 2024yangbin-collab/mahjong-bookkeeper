@@ -459,14 +459,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 4px;
+  padding: 8px 2px;
   cursor: pointer;
   color: var(--text-secondary);
   transition: color 0.2s;
   border: none;
   background: none;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 10px;
   gap: 2px;
 }
 
@@ -527,6 +527,135 @@ body {
   font-size: 11px;
   color: var(--text-secondary);
   padding: 4px 0 8px 0;
+}
+
+/* Signup / Leads */
+.lead-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lead-stat {
+  background: var(--card);
+  border-radius: 8px;
+  padding: 10px 6px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.lead-stat .num {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.lead-stat .lbl {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.lead-item {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.lead-item .lead-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lead-item .lead-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.lead-item .lead-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.lead-item .lead-contact {
+  font-size: 14px;
+  color: var(--primary);
+  font-weight: 500;
+  margin: 6px 0;
+  word-break: break-all;
+}
+
+.status-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-pending { background: #fff3e0; color: #e65100; }
+.status-contacted { background: #e3f2fd; color: #1565c0; }
+.status-matched { background: #e8f5e9; color: #2e7d32; }
+.status-cancelled { background: #f5f5f5; color: #999; }
+
+.lead-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.lead-actions button {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #fafafa;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.lead-actions button.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.filter-bar .chip {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.signup-link-box {
+  background: #faf6f0;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+
+.signup-link-box code {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--primary);
 }
 
 /* Safe area for iPhone notch */
@@ -659,6 +788,43 @@ body {
   </div>
 </div>
 
+<!-- ===== Page: Signup Leads ===== -->
+<div class="page" id="page-signup">
+  <div class="section-title">🀄 线上组局客户</div>
+
+  <div class="signup-link-box">
+    <strong>📎 报名链接（放到抖音/快手/美团简介）</strong>
+    <code id="signupLinkText">加载中...</code>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-outline" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="copySignupLink()">📋 复制链接</button>
+      <button class="btn btn-outline" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="copySignupLink('douyin')">抖音专用</button>
+      <button class="btn btn-outline" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="copySignupLink('kuaishou')">快手专用</button>
+      <button class="btn btn-outline" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="copySignupLink('meituan')">美团专用</button>
+    </div>
+    <div style="margin-top:8px;color:#999;font-size:11px;">
+      提示：客户在你手机上报名会存在本机。要跨设备接收报名，请在 signup.html 里配置 webhook（飞书/企业微信机器人）。
+    </div>
+  </div>
+
+  <div class="lead-stats" id="leadStats"></div>
+
+  <div class="backup-row" style="margin-bottom:12px;">
+    <button class="btn btn-outline" onclick="openLeadModal()">➕ 手动添加</button>
+    <button class="btn btn-outline" onclick="exportLeadsCsv()">📤 导出名单</button>
+    <button class="btn btn-outline" onclick="document.getElementById('importLeadsFile').click()">📥 导入名单</button>
+    <input type="file" id="importLeadsFile" accept=".json" style="display:none" onchange="importLeads(event)">
+  </div>
+
+  <div class="filter-bar" id="leadFilterBar">
+    <span class="chip selected" data-filter="all" onclick="setLeadFilter('all')">全部</span>
+    <span class="chip" data-filter="pending" onclick="setLeadFilter('pending')">待联系</span>
+    <span class="chip" data-filter="contacted" onclick="setLeadFilter('contacted')">已加微信</span>
+    <span class="chip" data-filter="matched" onclick="setLeadFilter('matched')">已组局</span>
+  </div>
+
+  <div id="leadList"></div>
+</div>
+
 <!-- ===== Modal ===== -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
@@ -700,13 +866,59 @@ body {
   <button class="nav-item" data-page="report" onclick="switchPage('report')">
     <span class="nav-icon">📈</span>月报
   </button>
+  <button class="nav-item" data-page="signup" onclick="switchPage('signup')">
+    <span class="nav-icon">🀄</span>组局
+  </button>
+</div>
+
+<!-- Lead Modal -->
+<div class="modal-overlay" id="leadModalOverlay" onclick="closeLeadModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="leadModalTitle">➕ 添加客户</h3>
+
+    <div class="form-group">
+      <label>昵称</label>
+      <input type="text" id="leadName" placeholder="客户称呼">
+    </div>
+
+    <div class="form-group">
+      <label>微信号 / 手机</label>
+      <input type="text" id="leadContact" placeholder="联系方式">
+    </div>
+
+    <div class="form-group">
+      <label>来源渠道</label>
+      <div class="chip-group" id="leadSourceChips">
+        <span class="chip" data-value="抖音">抖音</span>
+        <span class="chip" data-value="快手">快手</span>
+        <span class="chip" data-value="美团">美团</span>
+        <span class="chip selected" data-value="其他">其他</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>备注</label>
+      <input type="text" id="leadNote" placeholder="如：私信来的、想打周末">
+    </div>
+
+    <button class="btn btn-primary" onclick="saveLead()">✓ 保存</button>
+    <button class="btn" style="width:100%;margin-top:8px;background:#f5f5f5;color:#999;" onclick="closeLeadModalDirect()">取消</button>
+  </div>
 </div>
 
 <script>
 // ========== DATA LAYER ==========
 const STORAGE_KEY = 'mj_accounting_records';
+const SIGNUP_STORAGE_KEY = 'mj_signup_leads';
 const BACKUP_DATE_KEY = 'mj_last_backup_date';
 const AUTO_BACKUP_KEY = 'mj_auto_backup_enabled';
+
+const LEAD_STATUS_LABELS = {
+  pending: '待联系',
+  contacted: '已加微信',
+  matched: '已组局',
+  cancelled: '已取消'
+};
 
 function loadRecords() {
   try {
@@ -834,6 +1046,8 @@ let currentMonth = new Date().getMonth() + 1;
 let currentYear = new Date().getFullYear();
 let currentModalType = 'income';
 let selectedCategory = '';
+let leads = loadLeads();
+let leadFilter = 'all';
 
 const INCOME_CATEGORIES = ['台费', '茶水饮品', '其他收入'];
 const EXPENSE_CATEGORIES = ['水电费', '员工工资', '茶水物料', '其他支出'];
@@ -1109,6 +1323,10 @@ function switchPage(pageName) {
     const stats = getMonthStats(records, currentYear, currentMonth);
     renderReport(stats);
   }
+  if (pageName === 'signup') renderLeads();
+
+  const monthBar = document.querySelector('.month-bar');
+  if (monthBar) monthBar.style.display = pageName === 'signup' ? 'none' : '';
 }
 
 // ========== MONTH NAVIGATION ==========
@@ -1302,12 +1520,261 @@ function updateDataStats() {
   el.innerHTML = `📦 共 <strong>${records.length}</strong> 条记录 ｜ ${firstDate} ~ ${lastDate}`;
 }
 
+// ========== SIGNUP LEADS ==========
+function loadLeads() {
+  try {
+    const raw = localStorage.getItem(SIGNUP_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLeadsData(data) {
+  localStorage.setItem(SIGNUP_STORAGE_KEY, JSON.stringify(data));
+}
+
+function getSignupBaseUrl() {
+  const base = window.location.href.replace(/[^/]*$/, '');
+  return base + 'signup.html';
+}
+
+function updateSignupLinkDisplay() {
+  const el = document.getElementById('signupLinkText');
+  if (el) el.textContent = getSignupBaseUrl();
+}
+
+function copySignupLink(source) {
+  let url = getSignupBaseUrl();
+  if (source) url += '?from=' + source;
+  navigator.clipboard.writeText(url).then(() => {
+    const names = { douyin: '抖音', kuaishou: '快手', meituan: '美团' };
+    showToast('📋 已复制' + (names[source] ? names[source] + '专用' : '') + '报名链接');
+  }).catch(() => {
+    prompt('请手动复制链接：', url);
+  });
+}
+
+function setLeadFilter(filter) {
+  leadFilter = filter;
+  document.querySelectorAll('#leadFilterBar .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.filter === filter);
+  });
+  renderLeads();
+}
+
+function renderLeadStats() {
+  const stats = { pending: 0, contacted: 0, matched: 0, total: leads.length };
+  leads.forEach(l => {
+    if (stats[l.status] !== undefined) stats[l.status]++;
+  });
+  document.getElementById('leadStats').innerHTML = `
+    <div class="lead-stat"><div class="num">${stats.total}</div><div class="lbl">总报名</div></div>
+    <div class="lead-stat"><div class="num" style="color:#e65100">${stats.pending}</div><div class="lbl">待联系</div></div>
+    <div class="lead-stat"><div class="num" style="color:#1565c0">${stats.contacted}</div><div class="lbl">已加微信</div></div>
+    <div class="lead-stat"><div class="num" style="color:#2e7d32">${stats.matched}</div><div class="lbl">已组局</div></div>
+  `;
+}
+
+function renderLeads() {
+  leads = loadLeads();
+  updateSignupLinkDisplay();
+  renderLeadStats();
+
+  const container = document.getElementById('leadList');
+  let filtered = leads;
+  if (leadFilter !== 'all') {
+    filtered = leads.filter(l => l.status === leadFilter);
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🀄</div>
+      <div>${leadFilter === 'all' ? '还没有报名客户' : '该状态下暂无客户'}</div>
+      <div style="font-size:12px;margin-top:8px;color:#999;">把报名链接发到抖音/快手简介，或手动添加私信来的客户</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(l => {
+    const timeStr = new Date(l.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const times = (l.preferredTimes || []).join('、') || '未填';
+    return `
+      <div class="lead-item">
+        <div class="lead-top">
+          <div class="lead-name">${escapeHtml(l.name)}</div>
+          <span class="status-badge status-${l.status}">${LEAD_STATUS_LABELS[l.status] || l.status}</span>
+        </div>
+        <div class="lead-contact" onclick="copyLeadContact('${l.id}')" title="点击复制">${escapeHtml(l.contact)} <span style="font-size:11px;color:#999;">（点击复制）</span></div>
+        <div class="lead-meta">
+          来源：${escapeHtml(l.source || '未知')} ｜ ${l.players || 4}人局 ｜ ${escapeHtml(l.level || '')}<br>
+          时间偏好：${escapeHtml(times)}${l.gameDate ? ' ｜ 希望' + l.gameDate : ''}<br>
+          ${l.note ? '备注：' + escapeHtml(l.note) + '<br>' : ''}
+          报名：${timeStr} ｜ 编号 ${l.id}
+        </div>
+        <div class="lead-actions">
+          ${l.status === 'pending' ? '<button class="primary" onclick="updateLeadStatus(\'' + l.id + '\',\'contacted\')">已加微信</button>' : ''}
+          ${l.status === 'contacted' ? '<button class="primary" onclick="updateLeadStatus(\'' + l.id + '\',\'matched\')">已组局</button>' : ''}
+          ${l.status !== 'cancelled' ? '<button onclick="updateLeadStatus(\'' + l.id + '\',\'cancelled\')">取消</button>' : ''}
+          ${l.status === 'cancelled' ? '<button onclick="updateLeadStatus(\'' + l.id + '\',\'pending\')">恢复待联系</button>' : ''}
+          <button onclick="deleteLead(\'' + l.id + '\')">删除</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function copyLeadContact(id) {
+  const lead = loadLeads().find(l => l.id === id);
+  if (!lead) return;
+  navigator.clipboard.writeText(lead.contact).then(() => showToast('📋 已复制：' + lead.contact)).catch(() => showToast('复制失败'));
+}
+
+function updateLeadStatus(id, status) {
+  leads = loadLeads();
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  lead.status = status;
+  lead.updatedAt = new Date().toISOString();
+  saveLeadsData(leads);
+  renderLeads();
+  showToast('✅ 已更新为：' + LEAD_STATUS_LABELS[status]);
+}
+
+function deleteLead(id) {
+  if (!confirm('确定删除这位客户的报名信息？')) return;
+  leads = loadLeads().filter(l => l.id !== id);
+  saveLeadsData(leads);
+  renderLeads();
+  showToast('已删除');
+}
+
+function openLeadModal() {
+  document.getElementById('leadModalTitle').textContent = '➕ 手动添加客户';
+  document.getElementById('leadName').value = '';
+  document.getElementById('leadContact').value = '';
+  document.getElementById('leadNote').value = '';
+  document.querySelectorAll('#leadSourceChips .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === '其他');
+  });
+  document.getElementById('leadModalOverlay').classList.add('show');
+}
+
+function closeLeadModalDirect() {
+  document.getElementById('leadModalOverlay').classList.remove('show');
+}
+
+function closeLeadModal(e) {
+  if (e.target === document.getElementById('leadModalOverlay')) {
+    closeLeadModalDirect();
+  }
+}
+
+function saveLead() {
+  const name = document.getElementById('leadName').value.trim();
+  const contact = document.getElementById('leadContact').value.trim();
+  const note = document.getElementById('leadNote').value.trim();
+  const sourceChip = document.querySelector('#leadSourceChips .chip.selected');
+  const source = sourceChip ? sourceChip.dataset.value : '其他';
+
+  if (!name) { showToast('请填写昵称'); return; }
+  if (!contact) { showToast('请填写联系方式'); return; }
+
+  leads = loadLeads();
+  leads.unshift({
+    id: genId(),
+    name, contact,
+    contactType: 'wechat',
+    preferredTimes: [],
+    gameDate: '',
+    players: 4,
+    level: '',
+    source,
+    note,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  });
+  saveLeadsData(leads);
+  closeLeadModalDirect();
+  renderLeads();
+  showToast('✅ 客户已添加');
+}
+
+function exportLeadsCsv() {
+  leads = loadLeads();
+  if (leads.length === 0) { showToast('暂无报名数据'); return; }
+
+  const headers = ['昵称', '联系方式', '来源', '几人局', '水平', '时间偏好', '希望日期', '备注', '状态', '报名时间', '编号'];
+  const rows = leads.map(l => [
+    l.name, l.contact, l.source || '', l.players || 4, l.level || '',
+    (l.preferredTimes || []).join(';'), l.gameDate || '', l.note || '',
+    LEAD_STATUS_LABELS[l.status] || l.status,
+    new Date(l.createdAt).toLocaleString('zh-CN'), l.id
+  ]);
+
+  const csv = '\uFEFF' + [headers, ...rows].map(r =>
+    r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')
+  ).join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date();
+  a.download = `组局报名名单_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('📤 CSV 已下载');
+}
+
+function importLeads(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      const list = Array.isArray(imported) ? imported : imported.leads;
+      if (!list || !Array.isArray(list)) throw new Error('格式不正确');
+
+      leads = loadLeads();
+      const existingIds = new Set(leads.map(l => l.id));
+      let added = 0;
+      list.forEach(l => {
+        if (l.id && l.name && l.contact && !existingIds.has(l.id)) {
+          leads.unshift(l);
+          existingIds.add(l.id);
+          added++;
+        }
+      });
+      saveLeadsData(leads);
+      renderLeads();
+      showToast(`📥 成功导入 ${added} 位客户`);
+    } catch (err) {
+      showToast('❌ 文件格式错误');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// Lead source chips in modal
+document.querySelectorAll('#leadSourceChips .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#leadSourceChips .chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+  });
+});
+
 // ========== INIT ==========
 function init() {
   updateMonthLabel();
   updateDashboard();
   updateDataStats();
   updateBackupStatus();
+  updateSignupLinkDisplay();
   // 每次打开页面检查是否需要自动备份（>24h自动执行）
   setTimeout(() => { autoBackup(false); }, 1500);
 }
