@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="湖南麻将战图">
+<meta name="theme-color" content="#7a2f12">
+<title>湖南麻将战图助手</title>
+<style>
+:root {
+  --bg:#f6efe4; --card:#fffaf3; --ink:#342217; --muted:#7b6655; --line:#e5d2bd;
+  --primary:#8b3f19; --primary2:#bf6b2f; --accent:#1f7a5a; --danger:#bb352a;
+  --gold:#d8a03d; --shadow:0 12px 28px rgba(72,42,18,0.12); --radius:18px;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  min-height:100vh; background:linear-gradient(180deg,#f4e3c8 0%,var(--bg) 42%,#efe2d1 100%);
+  color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  max-width:720px; margin:0 auto; padding:16px 14px 28px;
+}
+button, input, select, textarea { font:inherit; }
+.hero {
+  background:linear-gradient(135deg,#54220d,#8c3c18 48%,#c87b2d); color:#fff;
+  border-radius:24px; padding:20px; box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.hero::after {
+  content:""; position:absolute; width:180px; height:180px; border:28px solid rgba(255,255,255,0.08);
+  border-radius:50%; right:-70px; top:-55px;
+}
+.hero h1 { font-size:24px; letter-spacing:1px; margin-bottom:8px; position:relative; z-index:1; }
+.hero p { font-size:14px; line-height:1.6; opacity:0.92; position:relative; z-index:1; }
+.top-link { color:#fff; opacity:0.9; font-size:13px; text-decoration:none; display:inline-block; margin-bottom:10px; }
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0; }
+.stat {
+  background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.22);
+  border-radius:14px; padding:10px; position:relative; z-index:1;
+}
+.stat strong { display:block; font-size:20px; }
+.stat span { font-size:11px; opacity:0.86; }
+.card {
+  background:var(--card); border:1px solid rgba(142,91,47,0.12); border-radius:var(--radius);
+  padding:16px; margin-top:14px; box-shadow:var(--shadow);
+}
+.card h2 { font-size:17px; margin-bottom:10px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
+.hint { color:var(--muted); font-size:12px; line-height:1.55; }
+.map {
+  position:relative; height:380px; border-radius:20px; overflow:hidden;
+  background:
+    radial-gradient(circle at 34% 65%,rgba(46,125,80,0.17),transparent 24%),
+    radial-gradient(circle at 62% 31%,rgba(36,112,170,0.15),transparent 22%),
+    linear-gradient(135deg,#fbf1dd,#e8caa0);
+  border:1px solid #dfc49f; margin-top:12px;
+}
+.route {
+  position:absolute; height:3px; background:linear-gradient(90deg,rgba(112,73,37,0.18),rgba(112,73,37,0.56),rgba(112,73,37,0.18));
+  transform-origin:left center; border-radius:999px;
+}
+.node {
+  position:absolute; transform:translate(-50%,-50%); border:none; background:transparent;
+  cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:5px; min-width:68px;
+}
+.dot {
+  width:42px; height:42px; border-radius:50%; background:#fff; border:3px solid #b58a56;
+  display:grid; place-items:center; box-shadow:0 6px 14px rgba(77,44,22,0.24); font-size:18px;
+}
+.node.owner-changsha .dot { border-color:#d8442e; background:#fff0eb; }
+.node.owner-yueyang .dot { border-color:#2166b1; background:#ebf4ff; }
+.node.owner-neutral .dot { border-color:#a28d78; background:#f7f3ee; }
+.node.active .dot { outline:4px solid rgba(216,160,61,0.34); transform:scale(1.08); }
+.node-name { background:rgba(255,250,243,0.9); border-radius:999px; padding:3px 8px; font-size:12px; box-shadow:0 2px 6px rgba(84,44,18,0.12); }
+.node-owner { color:var(--muted); font-size:10px; background:rgba(255,255,255,0.76); border-radius:999px; padding:2px 6px; }
+.panel-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.field { margin-bottom:10px; }
+.field label { display:block; color:var(--muted); font-size:12px; margin-bottom:5px; }
+select, input, textarea {
+  width:100%; border:1px solid var(--line); border-radius:12px; background:#fff; color:var(--ink);
+  padding:11px 12px; outline:none;
+}
+textarea { min-height:72px; resize:vertical; }
+.btn-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+.btn {
+  border:none; border-radius:14px; padding:12px 10px; font-weight:700; color:#fff; background:var(--primary);
+  cursor:pointer; box-shadow:0 7px 16px rgba(139,63,25,0.18);
+}
+.btn.secondary { background:#fff; color:var(--primary); border:1.5px solid var(--primary); box-shadow:none; }
+.btn.green { background:var(--accent); }
+.btn.red { background:var(--danger); }
+.btn.gold { background:linear-gradient(135deg,#9e621e,#d39a37); }
+.jump-list { display:grid; gap:10px; }
+.jump-item {
+  display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+  border:1px dashed #d9b98f; border-radius:14px; padding:10px; background:#fffdf9;
+}
+.jump-item strong { display:block; font-size:14px; margin-bottom:3px; }
+.jump-item span { color:var(--muted); font-size:12px; }
+.log { display:grid; gap:8px; max-height:260px; overflow:auto; padding-right:2px; }
+.log-item {
+  background:#fff; border:1px solid #ecdcc8; border-left:4px solid var(--gold);
+  border-radius:12px; padding:10px; font-size:13px; line-height:1.5;
+}
+.log-item.win { border-left-color:var(--accent); }
+.log-item.loss { border-left-color:var(--danger); }
+.toast {
+  position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(16px);
+  background:#2b2119; color:#fff; border-radius:999px; padding:11px 18px; opacity:0;
+  pointer-events:none; transition:all 0.22s; z-index:20; font-size:13px; max-width:86%; text-align:center;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+@media (max-width:560px) {
+  body { padding:12px 10px 24px; }
+  .map { height:330px; }
+  .panel-grid { grid-template-columns:1fr; }
+  .btn-row { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<section class="hero">
+  <a class="top-link" href="index.html">← 返回麻将馆记账本</a>
+  <h1>湖南麻将战图助手</h1>
+  <p>用长沙、岳阳、汨罗等城市做节点。约局在外部麻将小程序完成，回来记录胜负；胜者占城，败者撤退。</p>
+  <div class="stats">
+    <div class="stat"><strong id="changshaCount">0</strong><span>长沙阵营</span></div>
+    <div class="stat"><strong id="yueyangCount">0</strong><span>岳阳阵营</span></div>
+    <div class="stat"><strong id="battleCount">0</strong><span>战报</span></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>🗺️ 长沙 - 岳阳战区 <span class="hint">点城市选目标</span></h2>
+  <p class="hint">示例玩法：长沙朋友选择“汨罗”，点击跳转去华农麻将或亲友麻将开房；牌局结束后回来点“进攻成功”或“进攻失败”。</p>
+  <div class="map" id="map"></div>
+</section>
+
+<section class="card">
+  <h2>⚔️ 发起进攻</h2>
+  <div class="panel-grid">
+    <div>
+      <div class="field">
+        <label>进攻方</label>
+        <select id="attacker">
+          <option value="changsha">长沙盟军</option>
+          <option value="yueyang">岳阳守军</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>目标城市</label>
+        <select id="target"></select>
+      </div>
+      <div class="field">
+        <label>牌局备注</label>
+        <input id="note" placeholder="如：四人长沙麻将，好友房8888">
+      </div>
+    </div>
+    <div>
+      <div class="field">
+        <label>战斗规则</label>
+        <textarea id="rules">先在外部小程序完成一局；赢家占领目标城市，输家记为撤退。</textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn green" onclick="resolveBattle(true)">进攻成功，占领城市</button>
+        <button class="btn red" onclick="resolveBattle(false)">进攻失败，撤退</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>🚪 小程序跳转入口</h2>
+  <p class="hint">这里不破解、不接入第三方牌局数据，只保存你配置的跳转链接或口令。没有链接时会复制当前战斗口令，方便发给好友。</p>
+  <div class="jump-list" id="jumpList"></div>
+</section>
+
+<section class="card">
+  <h2>📝 战报 <button class="btn secondary" style="width:auto;padding:8px 12px;" onclick="copyReport()">复制战报</button></h2>
+  <div class="log" id="log"></div>
+  <div class="btn-row">
+    <button class="btn secondary" onclick="resetBoard()">重置战图</button>
+    <button class="btn gold" onclick="seedDemo()">载入示例战役</button>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'hunan-mahjong-war-v1';
+const OWNER_LABEL = { changsha:'长沙', yueyang:'岳阳', neutral:'中立' };
+const OWNER_ICON = { changsha:'湘', yueyang:'岳', neutral:'城' };
+const APPS = [
+  { id:'huanong', name:'华农麻将', desc:'配置华农麻将小程序链接、群口令或开房链接' },
+  { id:'qingyou', name:'亲友麻将', desc:'配置亲友麻将入口，也可填微信群口令' },
+  { id:'custom', name:'自定义入口', desc:'备用：任意房间链接、二维码说明或口令' }
+];
+const CITIES = [
+  { id:'changsha', name:'长沙', x:36, y:72, owner:'changsha' },
+  { id:'province', name:'省府', x:44, y:58, owner:'changsha' },
+  { id:'xiangyin', name:'湘阴', x:50, y:42, owner:'neutral' },
+  { id:'miluo', name:'汨罗', x:60, y:30, owner:'yueyang' },
+  { id:'pingjiang', name:'平江', x:77, y:40, owner:'neutral' },
+  { id:'yueyang', name:'岳阳', x:66, y:15, owner:'yueyang' },
+  { id:'yueyanglou', name:'岳阳楼', x:52, y:13, owner:'yueyang' }
+];
+const ROUTES = [
+  ['changsha','province'], ['province','xiangyin'], ['xiangyin','miluo'],
+  ['miluo','yueyang'], ['miluo','pingjiang'], ['yueyang','yueyanglou']
+];
+
+let state = loadState();
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try { return JSON.parse(saved); } catch (e) { localStorage.removeItem(STORAGE_KEY); }
+  }
+  return {
+    cities: CITIES.map(city => ({ ...city })),
+    logs: [],
+    links: { huanong:'', qingyou:'', custom:'' },
+    selectedTarget: 'miluo'
+  };
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function cityById(id) {
+  return state.cities.find(city => city.id === id);
+}
+
+function ownerClass(owner) {
+  return `owner-${owner || 'neutral'}`;
+}
+
+function renderMap() {
+  const map = document.getElementById('map');
+  map.innerHTML = ROUTES.map(([fromId, toId]) => renderRoute(cityById(fromId), cityById(toId))).join('')
+    + state.cities.map(city => `
+      <button class="node ${ownerClass(city.owner)} ${city.id === state.selectedTarget ? 'active' : ''}"
+        style="left:${city.x}%;top:${city.y}%;" onclick="selectTarget('${city.id}')" aria-label="选择${city.name}">
+        <span class="dot">${OWNER_ICON[city.owner] || '城'}</span>
+        <span class="node-name">${city.name}</span>
+        <span class="node-owner">${OWNER_LABEL[city.owner] || '中立'}占领</span>
+      </button>
+    `).join('');
+}
+
+function renderRoute(from, to) {
+  const width = Math.hypot(to.x - from.x, to.y - from.y);
+  const angle = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
+  return `<span class="route" style="left:${from.x}%;top:${from.y}%;width:${width}%;transform:rotate(${angle}deg);"></span>`;
+}
+
+function renderTargets() {
+  const target = document.getElementById('target');
+  target.innerHTML = state.cities.map(city => `<option value="${city.id}">${city.name}（${OWNER_LABEL[city.owner]}）</option>`).join('');
+  target.value = state.selectedTarget;
+}
+
+function renderStats() {
+  const changsha = state.cities.filter(city => city.owner === 'changsha').length;
+  const yueyang = state.cities.filter(city => city.owner === 'yueyang').length;
+  document.getElementById('changshaCount').textContent = changsha;
+  document.getElementById('yueyangCount').textContent = yueyang;
+  document.getElementById('battleCount').textContent = state.logs.length;
+}
+
+function renderJumpList() {
+  document.getElementById('jumpList').innerHTML = APPS.map(app => `
+    <div class="jump-item">
+      <div>
+        <strong>${app.name}</strong>
+        <span>${app.desc}</span>
+        <input value="${escapeAttr(state.links[app.id] || '')}" placeholder="粘贴链接、口令或小程序路径"
+          oninput="updateLink('${app.id}', this.value)" style="margin-top:8px;">
+      </div>
+      <button class="btn secondary" style="width:86px;" onclick="jumpToApp('${app.id}')">跳转</button>
+    </div>
+  `).join('');
+}
+
+function renderLogs() {
+  const log = document.getElementById('log');
+  if (!state.logs.length) {
+    log.innerHTML = '<div class="hint">暂无战报。可以先选择“汨罗”，点击跳转开局，结束后回来记录胜负。</div>';
+    return;
+  }
+  log.innerHTML = state.logs.map(item => `
+    <div class="log-item ${item.win ? 'win' : 'loss'}">
+      <strong>${item.time} · ${item.attackerName}${item.win ? '攻下' : '进攻失败'}${item.targetName}</strong><br>
+      ${item.win ? `${item.targetName} 归属 ${item.attackerName}` : `${item.targetName} 仍由 ${item.defenderName} 控制`}。
+      ${item.note ? `<br>备注：${escapeHtml(item.note)}` : ''}
+    </div>
+  `).join('');
+}
+
+function renderAll() {
+  renderMap();
+  renderTargets();
+  renderStats();
+  renderJumpList();
+  renderLogs();
+}
+
+function selectTarget(cityId) {
+  state.selectedTarget = cityId;
+  document.getElementById('target').value = cityId;
+  saveState();
+  renderMap();
+}
+
+function updateLink(appId, value) {
+  state.links[appId] = value.trim();
+  saveState();
+}
+
+function selectedAttacker() {
+  return document.getElementById('attacker').value;
+}
+
+function battleText(appName) {
+  const attacker = OWNER_LABEL[selectedAttacker()];
+  const target = cityById(state.selectedTarget);
+  const note = document.getElementById('note').value.trim();
+  return `湖南麻将战图：${attacker}进攻${target.name}。入口：${appName}。${note ? `备注：${note}` : '牌局结束后回来记录胜负。'}`;
+}
+
+async function jumpToApp(appId) {
+  const app = APPS.find(item => item.id === appId);
+  const value = state.links[appId];
+  if (!value) {
+    await copyText(battleText(app.name));
+    showToast(`已复制${app.name}战斗口令`);
+    return;
+  }
+  if (/^https?:\/\//i.test(value) || /^weixin:\/\//i.test(value)) {
+    window.location.href = value;
+    return;
+  }
+  await copyText(`${battleText(app.name)}\n${value}`);
+  showToast(`已复制${app.name}入口口令`);
+}
+
+function resolveBattle(win) {
+  const attacker = selectedAttacker();
+  const targetId = document.getElementById('target').value;
+  const target = cityById(targetId);
+  const previousOwner = target.owner;
+  const note = document.getElementById('note').value.trim();
+  state.selectedTarget = targetId;
+  if (win) target.owner = attacker;
+  state.logs.unshift({
+    id: Date.now(),
+    time: new Date().toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }),
+    attackerName: OWNER_LABEL[attacker],
+    defenderName: OWNER_LABEL[previousOwner] || '中立',
+    targetName: target.name,
+    win,
+    note
+  });
+  document.getElementById('note').value = '';
+  saveState();
+  renderAll();
+  showToast(win ? `${target.name}已被${OWNER_LABEL[attacker]}占领` : `${OWNER_LABEL[attacker]}进攻${target.name}失败`);
+}
+
+async function copyReport() {
+  const lines = [
+    '湖南麻将战图战报',
+    ...state.cities.map(city => `${city.name}：${OWNER_LABEL[city.owner]}`),
+    '',
+    ...state.logs.map(item => `${item.time} ${item.attackerName}${item.win ? '攻下' : '败退于'}${item.targetName}`)
+  ];
+  await copyText(lines.join('\n'));
+  showToast('战报已复制');
+}
+
+function resetBoard() {
+  if (!confirm('确定重置所有占领和战报？')) return;
+  state = {
+    cities: CITIES.map(city => ({ ...city })),
+    logs: [],
+    links: state.links,
+    selectedTarget: 'miluo'
+  };
+  saveState();
+  renderAll();
+  showToast('战图已重置');
+}
+
+function seedDemo() {
+  state.cities = CITIES.map(city => ({ ...city }));
+  state.selectedTarget = 'miluo';
+  state.logs = [];
+  document.getElementById('attacker').value = 'changsha';
+  document.getElementById('target').value = 'miluo';
+  document.getElementById('note').value = '示例：长沙好友房进攻汨罗';
+  resolveBattle(true);
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  textarea.remove();
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function escapeAttr(text) {
+  return String(text).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+document.getElementById('target').addEventListener('change', event => {
+  state.selectedTarget = event.target.value;
+  saveState();
+  renderMap();
+});
+
+renderAll();
+</script>
+</body>
+</html>
