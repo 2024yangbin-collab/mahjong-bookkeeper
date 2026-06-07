@@ -6,207 +6,853 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="麻将馆记账">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#8b4513">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🀄</text></svg>">
 <title>麻将馆记账本</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --bg: #f5f0e8; --card: #fff; --primary: #8b4513; --primary-light: #a0522d;
-  --income: #2e7d32; --income-bg: #e8f5e9; --expense: #c62828; --expense-bg: #ffebee;
-  --text: #333; --text-secondary: #666; --border: #e0d5c7; --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --radius: 12px; --nav-height: 64px;
+  --bg: #f5f0e8;
+  --card: #fff;
+  --primary: #8b4513;
+  --primary-light: #a0522d;
+  --income: #2e7d32;
+  --income-bg: #e8f5e9;
+  --expense: #c62828;
+  --expense-bg: #ffebee;
+  --text: #333;
+  --text-secondary: #666;
+  --border: #e0d5c7;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --nav-height: 64px;
+  --gold: #d4a017;
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: var(--bg); color: var(--text); min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
   padding-bottom: calc(var(--nav-height) + 24px);
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Header */
 .header {
-  background: linear-gradient(135deg, #5d2e0c, #8b4513); color: #fff;
-  padding: 16px 20px; text-align: center; position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(135deg, #5d2e0c, #8b4513);
+  color: #fff;
+  padding: 16px 20px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
   box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
-.header h1 { font-size: 20px; font-weight: 600; letter-spacing: 2px; }
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.header .mahjong-icon { font-size: 26px; }
+
+/* Month Picker */
 .month-bar {
-  display: flex; align-items: center; justify-content: center; gap: 16px;
-  padding: 12px 20px; background: var(--card); border-bottom: 1px solid var(--border);
-  position: sticky; top: 56px; z-index: 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 56px;
+  z-index: 99;
 }
+
 .month-bar button {
-  background: none; border: 1px solid var(--border); border-radius: 50%;
-  width: 32px; height: 32px; font-size: 16px; cursor: pointer;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition: all 0.2s;
 }
-.month-bar .month-label { font-size: 17px; font-weight: 600; min-width: 100px; text-align: center; }
+
+.month-bar button:active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.month-bar .month-label {
+  font-size: 17px;
+  font-weight: 600;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Page / Tab Content */
 .page { display: none; padding: 16px; }
 .page.active { display: block; }
 
-/* Summary */
-.summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
-.summary-card {
-  background: var(--card); border-radius: var(--radius); padding: 14px 10px;
-  text-align: center; box-shadow: var(--shadow);
+/* Summary Cards */
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
 }
-.summary-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
-.summary-card .value { font-size: 20px; font-weight: 700; }
+
+.summary-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px 10px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.summary-card .label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.summary-card .value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
 .summary-card.income .value { color: var(--income); }
 .summary-card.expense .value { color: var(--expense); }
 .summary-card.profit .value { color: var(--primary); }
-.section-title { font-size: 14px; color: var(--text-secondary); margin: 16px 0 8px 0; padding-left: 4px; letter-spacing: 1px; }
 
-/* Buttons */
-.action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.section-title {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 16px 0 8px 0;
+  padding-left: 4px;
+  letter-spacing: 1px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
 .btn {
-  border: none; border-radius: var(--radius); padding: 16px; font-size: 16px;
-  font-weight: 600; cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 1px;
+  border: none;
+  border-radius: var(--radius);
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: 1px;
 }
+
 .btn:active { transform: scale(0.97); }
-.btn-income { background: var(--income-bg); color: var(--income); border: 2px solid var(--income); }
-.btn-expense { background: var(--expense-bg); color: var(--expense); border: 2px solid var(--expense); }
-.btn-primary { background: var(--primary); color: #fff; width: 100%; margin-top: 8px; }
-.btn-outline {
-  background: var(--card); color: var(--primary); border: 1.5px solid var(--primary);
-  padding: 12px; font-size: 14px; border-radius: var(--radius); cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500;
-}
-.btn-delete { background: none; border: none; color: #999; font-size: 18px; cursor: pointer; padding: 4px 8px; }
 
-/* Modal */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
+.btn-income {
+  background: var(--income-bg);
+  color: var(--income);
+  border: 2px solid var(--income);
+}
+
+.btn-expense {
+  background: var(--expense-bg);
+  color: var(--expense);
+  border: 2px solid var(--expense);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-delete:active { background: #fee; color: var(--expense); }
+
+/* Form / Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+
 .modal-overlay.show { display: flex; }
-.modal {
-  background: #fff; border-radius: 16px 16px 0 0; padding: 20px;
-  width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; animation: slideUp 0.25s ease;
-}
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.modal h3 { text-align: center; margin-bottom: 16px; font-size: 18px; }
-.form-group { margin-bottom: 14px; }
-.form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 500; }
-.form-group input, .form-group select {
-  width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
-  font-size: 16px; font-family: inherit; background: #fafafa;
-}
-.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 20px;
-  font-size: 14px; cursor: pointer; background: #fafafa; transition: all 0.2s; user-select: none;
-}
-.chip.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-/* Records */
-.record-list { display: flex; flex-direction: column; gap: 8px; }
-.date-group { margin-bottom: 12px; }
-.date-group .date-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 4px; font-size: 14px; font-weight: 600; color: var(--text-secondary);
-  border-bottom: 1px solid var(--border); margin-bottom: 6px;
+.modal {
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 20px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideUp 0.25s ease;
 }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal h3 {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  background: #fafafa;
+  transition: border 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fff;
+}
+
+/* Category Chips */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.chip.selected {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* Record List */
+.record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-group {
+  margin-bottom: 12px;
+}
+
+.date-group .date-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.date-group .day-profit {
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .day-profit.positive { color: var(--income); }
 .day-profit.negative { color: var(--expense); }
+
 .record-item {
-  display: flex; align-items: center; padding: 12px; background: var(--card);
-  border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); gap: 10px;
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  gap: 10px;
 }
+
 .record-item .icon {
-  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
-  justify-content: center; font-size: 18px; flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
 }
+
 .record-item.income .icon { background: var(--income-bg); }
 .record-item.expense .icon { background: var(--expense-bg); }
+
 .record-item .info { flex: 1; min-width: 0; }
-.record-item .category { font-size: 14px; font-weight: 500; }
-.record-item .note { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.record-item .amount { font-size: 17px; font-weight: 700; white-space: nowrap; }
+
+.record-item .category {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.record-item .note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.record-item .amount {
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .record-item.income .amount { color: var(--income); }
 .record-item.expense .amount { color: var(--expense); }
 
 /* Report */
 .report-section {
-  background: var(--card); border-radius: var(--radius); padding: 16px;
-  margin-bottom: 12px; box-shadow: var(--shadow);
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
 }
-.report-section h4 { font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-.category-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #eee; }
+
+.report-section h4 {
+  font-size: 15px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.category-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed #eee;
+}
+
 .category-row:last-child { border-bottom: none; }
-.bar-wrap { height: 6px; background: #eee; border-radius: 3px; margin-top: 4px; overflow: hidden; }
-.bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+.category-row .cat-name { font-size: 14px; }
+.category-row .cat-amount { font-size: 15px; font-weight: 600; }
+
+.category-row.income-row .cat-amount { color: var(--income); }
+.category-row.expense-row .cat-amount { color: var(--expense); }
+
+.bar-wrap {
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.bar-wrap .bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
 .bar-fill.income-bar { background: var(--income); }
 .bar-fill.expense-bar { background: var(--expense); }
-.report-total { display: flex; justify-content: space-between; padding: 12px 0 0 0; font-size: 16px; font-weight: 700; }
 
-/* Nav */
+.report-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0 0 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.report-total.positive { color: var(--income); }
+.report-total.negative { color: var(--expense); }
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Bottom Nav */
 .bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0; background: var(--card);
-  border-top: 1px solid var(--border); display: flex; z-index: 100;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
   box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
 }
+
 .nav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 8px 4px; cursor: pointer; color: var(--text-secondary); border: none;
-  background: none; font-family: inherit; font-size: 11px; gap: 2px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 11px;
+  gap: 2px;
 }
+
 .nav-item .nav-icon { font-size: 22px; }
+
 .nav-item.active { color: var(--primary); font-weight: 600; }
-.empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
-.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
 
 /* Toast */
 .toast {
-  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-  background: #333; color: #fff; padding: 10px 24px; border-radius: 20px;
-  font-size: 14px; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
 }
+
 .toast.show { opacity: 1; }
 
-/* Login */
-.login-card {
-  background: var(--card); border-radius: 16px; padding: 24px; box-shadow: var(--shadow);
-  max-width: 350px; width: 100%; margin: 0 auto;
+/* Backup & Data Management */
+.backup-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 8px 0 4px 0;
 }
-.login-card h2 { text-align: center; margin-bottom: 4px; }
-.login-card .sub { text-align: center; color: #999; font-size: 13px; margin-bottom: 20px; }
-.login-input {
-  width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px;
-  font-size: 16px; margin-bottom: 10px; text-align: center;
-}
-.login-btn {
-  width: 100%; padding: 14px; background: linear-gradient(135deg,#5d2e0c,#8b4513);
-  color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: 600;
-  cursor: pointer; letter-spacing: 2px;
-}
-.login-link { background: none; border: none; color: var(--primary); font-size: 13px; cursor: pointer; display: block; margin: 10px auto 0; text-align: center; }
-.login-error { color: #c62828; font-size: 13px; min-height: 20px; text-align: center; margin-bottom: 8px; }
-.user-bar {
-  display: flex; align-items: center; justify-content: space-between; padding: 8px 16px;
-  background: var(--card); font-size: 12px; color: var(--text-secondary);
-}
-.user-bar button { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; color: #999; }
 
-.data-stats { text-align: center; font-size: 11px; color: var(--text-secondary); padding: 4px 0 8px 0; }
-.backup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 4px 0; }
-
-@media (min-width: 640px) {
-  body { max-width: 640px; margin: 0 auto; }
-  .modal-overlay { align-items: center; } .modal { border-radius: 16px; }
+.btn-outline {
+  background: var(--card);
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  padding: 12px;
+  font-size: 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
 }
+
+.btn-outline:active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.data-stats {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 4px 0 8px 0;
+}
+
+/* Safe area for iPhone notch */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   body { padding-bottom: calc(var(--nav-height) + 24px + env(safe-area-inset-bottom)); }
   .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* Desktop tweaks */
+@media (min-width: 640px) {
+  .summary-row { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .summary-card { padding: 20px; }
+  .summary-card .value { font-size: 26px; }
+  .action-buttons { gap: 16px; }
+  .btn { font-size: 18px; padding: 20px; }
+  body { max-width: 640px; margin: 0 auto; }
+  .modal-overlay { align-items: center; }
+  .modal { border-radius: 16px; }
+}
+
+/* Print */
+@media print {
+  .header, .month-bar, .bottom-nav, .action-buttons, .btn-delete { display: none; }
+  body { background: #fff; padding: 0; }
+  .page { display: block !important; }
 }
 </style>
 </head>
 <body>
 
-<!-- ===== SUPABASE INIT ===== -->
-<script>
-const SUPABASE_URL = 'https://isgistikhqqvuvjqoazw.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_lxYmaeMZ2-RRMc2t75KSKg_0r4HBy1c';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<!-- ===== Login Screen ===== -->
+<div id="loginScreen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:20px;">
+  <div style="font-size:64px;margin-bottom:16px;">🀄</div>
+  <h2 style="margin-bottom:4px;">麻将馆记账本</h2>
+  <p style="color:#999;font-size:13px;margin-bottom:20px;" id="loginSubtitle">请输入密码登录</p>
 
-let currentUser = null;
-let records = [];
+  <div id="loginAccountGroup" style="width:100%;max-width:300px;margin-bottom:12px;">
+    <label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">账号</label>
+    <input type="text" id="loginAccount" placeholder="请输入账号" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px;text-align:center;">
+  </div>
+  <div style="width:100%;max-width:300px;margin-bottom:8px;">
+    <label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">密码</label>
+    <input type="password" id="loginPassword" placeholder="请输入密码" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px;text-align:center;">
+  </div>
+  <div id="loginError" style="color:#c62828;font-size:13px;min-height:20px;margin-bottom:8px;"></div>
+  <button onclick="doLogin()" style="width:100%;max-width:300px;padding:14px;background:linear-gradient(135deg,#5d2e0c,#8b4513);color:#fff;border:none;border-radius:10px;font-size:17px;font-weight:600;cursor:pointer;letter-spacing:2px;">登 录</button>
+  <button id="forgotPwdBtn" onclick="resetPassword()" style="margin-top:12px;background:none;border:none;color:#999;font-size:12px;cursor:pointer;">忘记密码？</button>
+  <div id="resetHint" style="display:none;margin-top:8px;padding:10px;background:#fff3e0;border-radius:8px;font-size:11px;color:#e65100;max-width:300px;text-align:center;">密码错误。如需重置，请清除浏览器数据后刷新页面重新设置。</div>
+</div>
+
+<!-- ===== Main App (hidden until login) ===== -->
+<div id="mainApp" style="display:none;">
+
+<!-- Header -->
+<div class="header">
+  <h1><span class="mahjong-icon">🀄</span>麻将馆记账本</h1>
+</div>
+
+<!-- Month Bar -->
+<div class="month-bar">
+  <button onclick="prevMonth()">◀</button>
+  <span class="month-label" id="monthLabel">2026年 6月</span>
+  <button onclick="nextMonth()">▶</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== Page: Dashboard ===== -->
+<div class="page active" id="page-dashboard">
+  <div class="section-title">📅 今日概况</div>
+  <div class="summary-row">
+    <div class="summary-card income">
+      <div class="label">今日收入</div>
+      <div class="value" id="todayIncome">¥0</div>
+    </div>
+    <div class="summary-card expense">
+      <div class="label">今日支出</div>
+      <div class="value" id="todayExpense">¥0</div>
+    </div>
+    <div class="summary-card profit">
+      <div class="label">今日利润</div>
+      <div class="value" id="todayProfit">¥0</div>
+    </div>
+  </div>
+
+  <div class="section-title">📊 本月概况</div>
+  <div class="summary-row">
+    <div class="summary-card income">
+      <div class="label">本月收入</div>
+      <div class="value" id="monthIncome">¥0</div>
+    </div>
+    <div class="summary-card expense">
+      <div class="label">本月支出</div>
+      <div class="value" id="monthExpense">¥0</div>
+    </div>
+    <div class="summary-card profit">
+      <div class="label">本月利润</div>
+      <div class="value" id="monthProfit">¥0</div>
+    </div>
+  </div>
+
+  <div class="action-buttons">
+    <button class="btn btn-income" onclick="openModal('income')">💰 记一笔收入</button>
+    <button class="btn btn-expense" onclick="openModal('expense')">💸 记一笔支出</button>
+  </div>
+
+  <!-- Backup Tools -->
+  <div class="section-title">🔧 数据管理</div>
+  <div class="backup-row">
+    <button class="btn btn-outline" onclick="exportData()">
+      <span>📤</span> 导出备份
+    </button>
+    <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">
+      <span>📥</span> 导入恢复
+    </button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0;">
+    <span id="autoBackupBadge" style="font-size:11px;padding:3px 10px;border-radius:10px;background:#e8f5e9;color:#2e7d32;">🤖 自动备份已开启</span>
+    <button id="toggleAutoBackupBtn" onclick="toggleAutoBackup()" style="font-size:10px;background:none;border:1px solid #ccc;border-radius:8px;padding:2px 8px;cursor:pointer;color:#999;">关闭</button>
+  </div>
+  <div id="backupStatus" class="data-stats" style="margin-top:2px;"></div>
+  <div id="dataStats" class="data-stats"></div>
+
+  <div class="section-title">📋 今日记录</div>
+  <div id="todayRecords">
+    <div class="empty-state">
+      <div class="empty-icon">📝</div>
+      <div>今天还没有记录</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Page: Records ===== -->
+<div class="page" id="page-records">
+  <div class="section-title">📋 本月流水</div>
+  <div class="record-list" id="monthRecords">
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div>本月还没有记录</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Page: Report ===== -->
+<div class="page" id="page-report">
+  <div id="reportContent">
+    <div class="empty-state">
+      <div class="empty-icon">📈</div>
+      <div>本月暂无数据</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal ===== -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="modalTitle">记一笔收入</h3>
+
+    <div class="form-group">
+      <label>日期</label>
+      <input type="date" id="formDate">
+    </div>
+
+    <div class="form-group">
+      <label>类别</label>
+      <div class="chip-group" id="categoryChips"></div>
+    </div>
+
+    <div class="form-group">
+      <label>金额 (元)</label>
+      <input type="number" id="formAmount" placeholder="请输入金额" step="0.01" min="0.01" inputmode="decimal">
+    </div>
+
+    <div class="form-group">
+      <label>备注（选填）</label>
+      <input type="text" id="formNote" placeholder="如：3号桌下午场">
+    </div>
+
+    <button class="btn btn-primary" onclick="saveRecord()">✓ 确认保存</button>
+    <button class="btn" style="width:100%;margin-top:8px;background:#f5f5f5;color:#999;" onclick="closeModalDirect()">取消</button>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <button class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+    <span class="nav-icon">🏠</span>仪表盘
+  </button>
+  <button class="nav-item" data-page="records" onclick="switchPage('records')">
+    <span class="nav-icon">📋</span>流水
+  </button>
+  <button class="nav-item" data-page="report" onclick="switchPage('report')">
+    <span class="nav-icon">📈</span>月报
+  </button>
+</div>
+
+<script>
+// ========== DATA LAYER ==========
+const STORAGE_KEY = 'mj_accounting_records';
+const BACKUP_DATE_KEY = 'mj_last_backup_date';
+const AUTO_BACKUP_KEY = 'mj_auto_backup_enabled';
+
+function loadRecords() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveRecords(records) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ========== AUTO BACKUP ==========
+function isAutoBackupEnabled() {
+  const val = localStorage.getItem(AUTO_BACKUP_KEY);
+  return val === null ? true : val === 'true';  // 默认开启
+}
+
+function setAutoBackupEnabled(enabled) {
+  localStorage.setItem(AUTO_BACKUP_KEY, String(enabled));
+}
+
+function getLastBackupDate() {
+  return localStorage.getItem(BACKUP_DATE_KEY) || '';
+}
+
+function recordBackup() {
+  const today = todayStr();
+  localStorage.setItem(BACKUP_DATE_KEY, today);
+}
+
+function autoBackup(forceToast = false) {
+  if (!isAutoBackupEnabled()) return;
+  if (records.length === 0) return;
+
+  const lastBackup = getLastBackupDate();
+  const today = todayStr();
+
+  // 今天已备份，不重复
+  if (lastBackup === today) return;
+
+  // 执行自动备份（静默下载）
+  try {
+    const exportObj = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      totalRecords: records.length,
+      records: records
+    };
+    const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const now = new Date();
+    const filename = `麻将馆记账_自动备份_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.json`;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    recordBackup();
+    updateBackupStatus();
+
+    if (forceToast) {
+      showToast('🤖 每日自动备份完成 ✅');
+    }
+    console.log('🤖 自动备份完成:', filename);
+  } catch (e) {
+    console.warn('自动备份失败:', e);
+  }
+}
+
+function toggleAutoBackup() {
+  const current = isAutoBackupEnabled();
+  setAutoBackupEnabled(!current);
+  updateBackupStatus();
+  const msg = !current ? '✅ 自动备份已开启' : '⏸️ 自动备份已关闭';
+  showToast(msg);
+}
+
+function updateBackupStatus() {
+  const statusEl = document.getElementById('backupStatus');
+  const badgeEl = document.getElementById('autoBackupBadge');
+  const toggleBtn = document.getElementById('toggleAutoBackupBtn');
+
+  const enabled = isAutoBackupEnabled();
+  const lastBackup = getLastBackupDate();
+
+  // Badge
+  if (enabled) {
+    badgeEl.innerHTML = '🤖 自动备份已开启';
+    badgeEl.style.background = '#e8f5e9';
+    badgeEl.style.color = '#2e7d32';
+    toggleBtn.textContent = '关闭';
+  } else {
+    badgeEl.innerHTML = '⏸️ 自动备份已暂停';
+    badgeEl.style.background = '#fff3e0';
+    badgeEl.style.color = '#e65100';
+    toggleBtn.textContent = '开启';
+  }
+
+  // Status text
+  if (lastBackup) {
+    const days = Math.floor((new Date() - new Date(lastBackup)) / 86400000);
+    if (days === 0) {
+      statusEl.innerHTML = '✅ 今日已自动备份';
+    } else {
+      statusEl.innerHTML = `⚠️ 上次备份：${lastBackup}（${days}天前）`;
+    }
+  } else {
+    statusEl.innerHTML = '📌 尚未自动备份，打开页面时将自动执行';
+  }
+}
+
+// ========== STATE ==========
+let records = loadRecords();
 let currentMonth = new Date().getMonth() + 1;
 let currentYear = new Date().getFullYear();
 let currentModalType = 'income';
@@ -214,397 +860,610 @@ let selectedCategory = '';
 
 const INCOME_CATEGORIES = ['台费', '茶水饮品', '其他收入'];
 const EXPENSE_CATEGORIES = ['水电费', '员工工资', '茶水物料', '其他支出'];
-</script>
-
-<!-- ===== LOGIN SCREEN ===== -->
-<div id="loginScreen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:20px;">
-  <div style="font-size:64px;margin-bottom:10px;">🀄</div>
-  <div class="login-card">
-    <h2 id="authTitle">麻将馆记账本</h2>
-    <p class="sub" id="authSub">登录账号以同步数据</p>
-    <input type="email" class="login-input" id="authEmail" placeholder="邮箱">
-    <input type="password" class="login-input" id="authPassword" placeholder="密码">
-    <div class="login-error" id="loginError"></div>
-    <button class="login-btn" id="authBtn" onclick="handleAuth()">登 录</button>
-    <button class="login-link" id="authSwitch" onclick="toggleAuthMode()">还没有账号？点击注册</button>
-  </div>
-</div>
-
-<!-- ===== MAIN APP ===== -->
-<div id="mainApp" style="display:none;">
-
-<div class="header">
-  <h1>🀄 麻将馆记账本</h1>
-</div>
-<div class="user-bar">
-  <span id="userEmail"></span>
-  <button onclick="logout()">退出</button>
-</div>
-<div class="month-bar">
-  <button onclick="prevMonth()">◀</button>
-  <span class="month-label" id="monthLabel">2026年 6月</span>
-  <button onclick="nextMonth()">▶</button>
-</div>
-<div class="toast" id="toast"></div>
-
-<!-- Dashboard -->
-<div class="page active" id="page-dashboard">
-  <div class="section-title">📅 今日概况</div>
-  <div class="summary-row">
-    <div class="summary-card income"><div class="label">今日收入</div><div class="value" id="todayIncome">¥0</div></div>
-    <div class="summary-card expense"><div class="label">今日支出</div><div class="value" id="todayExpense">¥0</div></div>
-    <div class="summary-card profit"><div class="label">今日利润</div><div class="value" id="todayProfit">¥0</div></div>
-  </div>
-  <div class="section-title">📊 本月概况</div>
-  <div class="summary-row">
-    <div class="summary-card income"><div class="label">本月收入</div><div class="value" id="monthIncome">¥0</div></div>
-    <div class="summary-card expense"><div class="label">本月支出</div><div class="value" id="monthExpense">¥0</div></div>
-    <div class="summary-card profit"><div class="label">本月利润</div><div class="value" id="monthProfit">¥0</div></div>
-  </div>
-  <div class="action-buttons">
-    <button class="btn btn-income" onclick="openModal('income')">💰 记一笔收入</button>
-    <button class="btn btn-expense" onclick="openModal('expense')">💸 记一笔支出</button>
-  </div>
-  <div class="section-title">📋 今日记录</div>
-  <div id="todayRecords"><div class="empty-state"><div class="empty-icon">📝</div><div>今天还没有记录</div></div></div>
-</div>
-
-<!-- Records -->
-<div class="page" id="page-records">
-  <div class="section-title">📋 本月流水</div>
-  <div class="record-list" id="monthRecords"><div class="empty-state"><div class="empty-icon">📭</div><div>本月还没有记录</div></div></div>
-</div>
-
-<!-- Report -->
-<div class="page" id="page-report">
-  <div id="reportContent"><div class="empty-state"><div class="empty-icon">📈</div><div>本月暂无数据</div></div></div>
-</div>
-
-<!-- Modal -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <h3 id="modalTitle">记一笔收入</h3>
-    <div class="form-group"><label>日期</label><input type="date" id="formDate"></div>
-    <div class="form-group"><label>类别</label><div class="chip-group" id="categoryChips"></div></div>
-    <div class="form-group"><label>金额 (元)</label><input type="number" id="formAmount" placeholder="请输入金额" step="0.01" min="0.01" inputmode="decimal"></div>
-    <div class="form-group"><label>备注</label><input type="text" id="formNote" placeholder="如：3号桌下午场"></div>
-    <button class="btn btn-primary" onclick="saveRecord()">✓ 确认保存</button>
-    <button class="btn" style="width:100%;margin-top:8px;background:#f5f5f5;color:#999;" onclick="closeModalDirect()">取消</button>
-  </div>
-</div>
-
-<!-- Nav -->
-<div class="bottom-nav">
-  <button class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')"><span class="nav-icon">🏠</span>仪表盘</button>
-  <button class="nav-item" data-page="records" onclick="switchPage('records')"><span class="nav-icon">📋</span>流水</button>
-  <button class="nav-item" data-page="report" onclick="switchPage('report')"><span class="nav-icon">📈</span>月报</button>
-</div>
-
-</div><!-- end mainApp -->
-
-<!-- ===== APP LOGIC ===== -->
-<script>
-// ========== AUTH ==========
-let authMode = 'login'; // login | signup
-
-function toggleAuthMode() {
-  if (authMode === 'login') {
-    authMode = 'signup';
-    document.getElementById('authTitle').textContent = '注册账号';
-    document.getElementById('authSub').textContent = '注册后数据云端同步';
-    document.getElementById('authBtn').textContent = '注 册';
-    document.getElementById('authSwitch').textContent = '已有账号？点击登录';
-  } else {
-    authMode = 'login';
-    document.getElementById('authTitle').textContent = '麻将馆记账本';
-    document.getElementById('authSub').textContent = '登录账号以同步数据';
-    document.getElementById('authBtn').textContent = '登 录';
-    document.getElementById('authSwitch').textContent = '还没有账号？点击注册';
-  }
-  document.getElementById('loginError').textContent = '';
-}
-
-async function handleAuth() {
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  const errorEl = document.getElementById('loginError');
-
-  if (!email || !password) { errorEl.textContent = '请输入邮箱和密码'; return; }
-  if (password.length < 6) { errorEl.textContent = '密码至少6位'; return; }
-
-  let result;
-  if (authMode === 'signup') {
-    result = await supabase.auth.signUp({ email, password });
-    if (result.error) {
-      errorEl.textContent = result.error.message;
-      return;
-    }
-    if (result.data.user?.identities?.length === 0) {
-      errorEl.textContent = '该邮箱已注册，请直接登录';
-      toggleAuthMode();
-      return;
-    }
-    showToast('✅ 注册成功！');
-  } else {
-    result = await supabase.auth.signInWithPassword({ email, password });
-  }
-
-  if (result.error) {
-    errorEl.textContent = result.error.message === 'Invalid login credentials'
-      ? '邮箱或密码错误' : result.error.message;
-    return;
-  }
-
-  currentUser = result.data.user;
-  document.getElementById('userEmail').textContent = currentUser.email;
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
-  init();
-}
-
-async function logout() {
-  await supabase.auth.signOut();
-  currentUser = null;
-  records = [];
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('mainApp').style.display = 'none';
-  document.getElementById('authEmail').value = '';
-  document.getElementById('authPassword').value = '';
-}
-
-// ========== DATA ==========
-async function loadRecords() {
-  const { data, error } = await supabase
-    .from('records')
-    .select('*')
-    .order('date', { ascending: false })
-    .order('created_at', { ascending: false });
-
-  if (error) { console.error('Load error:', error); return []; }
-  return data || [];
-}
-
-async function refreshRecords() {
-  records = await loadRecords();
-}
 
 // ========== HELPERS ==========
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+function isSameDay(d1, d2) {
+  return d1 === d2;
+}
+
 function isSameMonth(dateStr, year, month) {
-  if (!dateStr) return false;
   const [y, m] = dateStr.split('-').map(Number);
   return y === year && m === month;
 }
-function formatMoney(n) { return '¥' + Number(n).toFixed(2); }
-function getDayProfit(records, dateStr) {
-  let income=0, expense=0;
-  records.forEach(r => { if (r.date === dateStr) { if (r.type==='income') income+=r.amount; else expense+=r.amount; }});
-  return {income, expense, profit: income-expense};
+
+function formatMoney(n) {
+  return '¥' + Number(n).toFixed(2);
 }
-function getMonthStats(records, year, month) {
-  let income=0, expense=0;
-  const incomeByCat={}, expenseByCat={};
+
+function getDayProfit(records, dateStr) {
+  let income = 0, expense = 0;
   records.forEach(r => {
-    if (isSameMonth(r.date, year, month)) {
-      if (r.type==='income') { income+=r.amount; incomeByCat[r.category]=(incomeByCat[r.category]||0)+r.amount; }
-      else { expense+=r.amount; expenseByCat[r.category]=(expenseByCat[r.category]||0)+r.amount; }
+    if (r.date === dateStr) {
+      if (r.type === 'income') income += r.amount;
+      else expense += r.amount;
     }
   });
-  return {income, expense, profit: income-expense, incomeByCat, expenseByCat};
+  return { income, expense, profit: income - expense };
 }
-function getWeekDay(ds) { return ['周日','周一','周二','周三','周四','周五','周六'][new Date(ds).getDay()]; }
-function escapeHtml(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
-// ========== UI ==========
-async function updateDashboard() {
+function getMonthStats(records, year, month) {
+  let income = 0, expense = 0;
+  const incomeByCat = {}, expenseByCat = {};
+  records.forEach(r => {
+    if (isSameMonth(r.date, year, month)) {
+      if (r.type === 'income') {
+        income += r.amount;
+        incomeByCat[r.category] = (incomeByCat[r.category] || 0) + r.amount;
+      } else {
+        expense += r.amount;
+        expenseByCat[r.category] = (expenseByCat[r.category] || 0) + r.amount;
+      }
+    }
+  });
+  return { income, expense, profit: income - expense, incomeByCat, expenseByCat };
+}
+
+// ========== UI UPDATES ==========
+function updateMonthLabel() {
+  document.getElementById('monthLabel').textContent = `${currentYear}年 ${currentMonth}月`;
+}
+
+function updateDashboard() {
+  // Today
   const today = todayStr();
   const todayStats = getDayProfit(records, today);
   document.getElementById('todayIncome').textContent = formatMoney(todayStats.income);
   document.getElementById('todayExpense').textContent = formatMoney(todayStats.expense);
   const tp = document.getElementById('todayProfit');
-  tp.textContent = todayStats.profit >= 0 ? formatMoney(todayStats.profit) : '-'+formatMoney(Math.abs(todayStats.profit));
+  tp.textContent = todayStats.profit >= 0 ? formatMoney(todayStats.profit) : '-' + formatMoney(Math.abs(todayStats.profit));
   tp.style.color = todayStats.profit >= 0 ? 'var(--income)' : 'var(--expense)';
 
-  const ms = getMonthStats(records, currentYear, currentMonth);
-  document.getElementById('monthIncome').textContent = formatMoney(ms.income);
-  document.getElementById('monthExpense').textContent = formatMoney(ms.expense);
+  // Month
+  const monthStats = getMonthStats(records, currentYear, currentMonth);
+  document.getElementById('monthIncome').textContent = formatMoney(monthStats.income);
+  document.getElementById('monthExpense').textContent = formatMoney(monthStats.expense);
   const mp = document.getElementById('monthProfit');
-  mp.textContent = ms.profit >= 0 ? formatMoney(ms.profit) : '-'+formatMoney(Math.abs(ms.profit));
-  mp.style.color = ms.profit >= 0 ? 'var(--income)' : 'var(--expense)';
+  mp.textContent = monthStats.profit >= 0 ? formatMoney(monthStats.profit) : '-' + formatMoney(Math.abs(monthStats.profit));
+  mp.style.color = monthStats.profit >= 0 ? 'var(--income)' : 'var(--expense)';
 
+  // Today records
   renderTodayRecords(today);
+
+  // Update records & report pages to reflect current month
   renderMonthRecords();
-  renderReport(ms);
+  renderReport(monthStats);
+  updateDataStats();
 }
 
 function renderTodayRecords(today) {
   const container = document.getElementById('todayRecords');
-  const dayRecords = records.filter(r => r.date === today).sort((a,b) => b.created_at?.localeCompare(a.created_at||'') || 0);
-  if (!dayRecords.length) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><div>今天还没有记录</div></div>'; return; }
+  const dayRecords = records.filter(r => r.date === today).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  if (dayRecords.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><div>今天还没有记录</div></div>';
+    return;
+  }
+
   container.innerHTML = dayRecords.map(r => `
     <div class="record-item ${r.type}">
-      <div class="icon">${r.type==='income'?'💰':'💸'}</div>
-      <div class="info"><div class="category">${r.category}</div>${r.note?`<div class="note">${escapeHtml(r.note)}</div>`:''}</div>
-      <div class="amount">${r.type==='income'?'+':'-'}${formatMoney(r.amount)}</div>
-      <button class="btn-delete" onclick="deleteRecord(${r.id})">✕</button>
-    </div>`).join('');
+      <div class="icon">${r.type === 'income' ? '💰' : '💸'}</div>
+      <div class="info">
+        <div class="category">${r.category}</div>
+        ${r.note ? `<div class="note">${escapeHtml(r.note)}</div>` : ''}
+      </div>
+      <div class="amount">${r.type === 'income' ? '+' : '-'}${formatMoney(r.amount)}</div>
+      <button class="btn-delete" onclick="deleteRecord('${r.id}')" title="删除">✕</button>
+    </div>
+  `).join('');
 }
 
 function renderMonthRecords() {
   const container = document.getElementById('monthRecords');
-  const monthRecords = records.filter(r => isSameMonth(r.date, currentYear, currentMonth))
-    .sort((a,b) => (b.date||'').localeCompare(a.date||'') || (b.created_at||'').localeCompare(a.created_at||''));
-  if (!monthRecords.length) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div>本月还没有记录</div></div>'; return; }
+  const monthRecords = records
+    .filter(r => isSameMonth(r.date, currentYear, currentMonth))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+
+  if (monthRecords.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div>本月还没有记录</div></div>';
+    return;
+  }
+
+  // Group by date
   const grouped = {};
-  monthRecords.forEach(r => { if(!grouped[r.date]) grouped[r.date]=[]; grouped[r.date].push(r); });
+  monthRecords.forEach(r => {
+    if (!grouped[r.date]) grouped[r.date] = [];
+    grouped[r.date].push(r);
+  });
+
   let html = '';
   for (const [date, recs] of Object.entries(grouped)) {
-    const dp = getDayProfit(records, date);
-    const cls = dp.profit>=0?'positive':'negative';
-    const ps = dp.profit>=0?`+${formatMoney(dp.profit)}`:`-${formatMoney(Math.abs(dp.profit))}`;
-    const [y,m,d] = date.split('-');
-    html += `<div class="date-group"><div class="date-header"><span>📅 ${m}月${d}日 ${getWeekDay(date)}</span><span class="day-profit ${cls}">当日: ${ps}</span></div>`;
+    const dayProfit = getDayProfit(records, date);
+    const profitClass = dayProfit.profit >= 0 ? 'positive' : 'negative';
+    const profitStr = dayProfit.profit >= 0 ? `+${formatMoney(dayProfit.profit)}` : `-${formatMoney(Math.abs(dayProfit.profit))}`;
+    const weekDay = getWeekDay(date);
+    const [y, m, d] = date.split('-');
+
+    html += `<div class="date-group">
+      <div class="date-header">
+        <span>📅 ${m}月${d}日 ${weekDay}</span>
+        <span class="day-profit ${profitClass}">当日: ${profitStr}</span>
+      </div>`;
+
     recs.forEach(r => {
-      html += `<div class="record-item ${r.type}" style="margin-bottom:4px;">
-        <div class="icon">${r.type==='income'?'💰':'💸'}</div>
-        <div class="info"><div class="category">${r.category}</div>${r.note?`<div class="note">${escapeHtml(r.note)}</div>`:''}</div>
-        <div class="amount">${r.type==='income'?'+':'-'}${formatMoney(r.amount)}</div>
-        <button class="btn-delete" onclick="deleteRecord(${r.id})">✕</button></div>`;
+      html += `
+        <div class="record-item ${r.type}" style="margin-bottom:4px;">
+          <div class="icon">${r.type === 'income' ? '💰' : '💸'}</div>
+          <div class="info">
+            <div class="category">${r.category}</div>
+            ${r.note ? `<div class="note">${escapeHtml(r.note)}</div>` : ''}
+          </div>
+          <div class="amount">${r.type === 'income' ? '+' : '-'}${formatMoney(r.amount)}</div>
+          <button class="btn-delete" onclick="deleteRecord('${r.id}')" title="删除">✕</button>
+        </div>`;
     });
+
     html += '</div>';
   }
+
   container.innerHTML = html;
 }
 
 function renderReport(stats) {
   const container = document.getElementById('reportContent');
-  if (stats.income===0 && stats.expense===0) { container.innerHTML='<div class="empty-state"><div class="empty-icon">📈</div><div>本月暂无数据</div></div>'; return; }
-  const maxInc = Math.max(...Object.values(stats.incomeByCat), 1);
-  const maxExp = Math.max(...Object.values(stats.expenseByCat), 1);
-  let ih='', eh='';
-  for (const cat of [...INCOME_CATEGORIES, ...Object.keys(stats.incomeByCat).filter(c=>!INCOME_CATEGORIES.includes(c))]) {
-    const amt = stats.incomeByCat[cat]||0; if(amt===0) continue;
-    ih += `<div class="category-row"><div style="flex:1;"><span>${cat}</span><div class="bar-wrap"><div class="bar-fill income-bar" style="width:${amt/maxInc*100}%"></div></div></div><span style="color:var(--income);font-weight:600;">${formatMoney(amt)}</span></div>`;
+
+  if (stats.income === 0 && stats.expense === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><div>本月暂无数据</div></div>';
+    return;
   }
-  for (const cat of [...EXPENSE_CATEGORIES, ...Object.keys(stats.expenseByCat).filter(c=>!EXPENSE_CATEGORIES.includes(c))]) {
-    const amt = stats.expenseByCat[cat]||0; if(amt===0) continue;
-    eh += `<div class="category-row"><div style="flex:1;"><span>${cat}</span><div class="bar-wrap"><div class="bar-fill expense-bar" style="width:${amt/maxExp*100}%"></div></div></div><span style="color:var(--expense);font-weight:600;">${formatMoney(amt)}</span></div>`;
+
+  const maxIncome = Math.max(...Object.values(stats.incomeByCat), 1);
+  const maxExpense = Math.max(...Object.values(stats.expenseByCat), 1);
+
+  let incomeHtml = '';
+  for (const cat of INCOME_CATEGORIES) {
+    const amt = stats.incomeByCat[cat] || 0;
+    if (amt === 0 && stats.income === 0) continue;
+    incomeHtml += `
+      <div class="category-row income-row">
+        <div style="flex:1;">
+          <span class="cat-name">${cat}</span>
+          <div class="bar-wrap"><div class="bar-fill income-bar" style="width:${(amt/maxIncome*100)}%"></div></div>
+        </div>
+        <span class="cat-amount">${formatMoney(amt)}</span>
+      </div>`;
   }
+
+  // Also show categories that have data but aren't in the default list
+  for (const [cat, amt] of Object.entries(stats.incomeByCat)) {
+    if (!INCOME_CATEGORIES.includes(cat)) {
+      incomeHtml += `
+        <div class="category-row income-row">
+          <div style="flex:1;">
+            <span class="cat-name">${cat}</span>
+            <div class="bar-wrap"><div class="bar-fill income-bar" style="width:${(amt/maxIncome*100)}%"></div></div>
+          </div>
+          <span class="cat-amount">${formatMoney(amt)}</span>
+        </div>`;
+    }
+  }
+
+  let expenseHtml = '';
+  for (const cat of EXPENSE_CATEGORIES) {
+    const amt = stats.expenseByCat[cat] || 0;
+    if (amt === 0 && stats.expense === 0) continue;
+    expenseHtml += `
+      <div class="category-row expense-row">
+        <div style="flex:1;">
+          <span class="cat-name">${cat}</span>
+          <div class="bar-wrap"><div class="bar-fill expense-bar" style="width:${(amt/maxExpense*100)}%"></div></div>
+        </div>
+        <span class="cat-amount">${formatMoney(amt)}</span>
+      </div>`;
+  }
+
+  for (const [cat, amt] of Object.entries(stats.expenseByCat)) {
+    if (!EXPENSE_CATEGORIES.includes(cat)) {
+      expenseHtml += `
+        <div class="category-row expense-row">
+          <div style="flex:1;">
+            <span class="cat-name">${cat}</span>
+            <div class="bar-wrap"><div class="bar-fill expense-bar" style="width:${(amt/maxExpense*100)}%"></div></div>
+          </div>
+          <span class="cat-amount">${formatMoney(amt)}</span>
+        </div>`;
+    }
+  }
+
   container.innerHTML = `
-    <div class="report-section"><h4>💰 收入明细</h4>${ih||'<div style="color:#999;text-align:center;padding:12px;">无</div>'}<div class="report-total" style="color:var(--income);"><span>收入合计</span><span>${formatMoney(stats.income)}</span></div></div>
-    <div class="report-section"><h4>💸 支出明细</h4>${eh||'<div style="color:#999;text-align:center;padding:12px;">无</div>'}<div class="report-total" style="color:var(--expense);"><span>支出合计</span><span>${formatMoney(stats.expense)}</span></div></div>
-    <div class="report-section"><div class="report-total ${stats.profit>=0?'positive':'negative'}" style="font-size:18px;"><span>📊 本月净利润</span><span>${stats.profit>=0?formatMoney(stats.profit):'-'+formatMoney(Math.abs(stats.profit))}</span></div></div>`;
+    <div class="report-section">
+      <h4>💰 收入明细</h4>
+      ${incomeHtml || '<div style="color:#999;text-align:center;padding:12px;">无收入记录</div>'}
+      <div class="report-total" style="color:var(--income);">
+        <span>收入合计</span>
+        <span>${formatMoney(stats.income)}</span>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h4>💸 支出明细</h4>
+      ${expenseHtml || '<div style="color:#999;text-align:center;padding:12px;">无支出记录</div>'}
+      <div class="report-total" style="color:var(--expense);">
+        <span>支出合计</span>
+        <span>${formatMoney(stats.expense)}</span>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-total ${stats.profit >= 0 ? 'positive' : 'negative'}">
+        <span>📊 本月净利润</span>
+        <span>${stats.profit >= 0 ? formatMoney(stats.profit) : '-' + formatMoney(Math.abs(stats.profit))}</span>
+      </div>
+    </div>
+  `;
 }
 
-// ========== NAVIGATION ==========
-function switchPage(name) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.page===name));
-  if (name==='dashboard') updateDashboard();
-  if (name==='records') renderMonthRecords();
-  if (name==='report') { const s=getMonthStats(records,currentYear,currentMonth); renderReport(s); }
+function getWeekDay(dateStr) {
+  const d = new Date(dateStr);
+  return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ========== PAGE NAVIGATION ==========
+function switchPage(pageName) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageName).classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.nav-item[data-page="${pageName}"]`).classList.add('active');
+
+  if (pageName === 'dashboard') updateDashboard();
+  if (pageName === 'records') renderMonthRecords();
+  if (pageName === 'report') {
+    const stats = getMonthStats(records, currentYear, currentMonth);
+    renderReport(stats);
+  }
+}
+
+// ========== MONTH NAVIGATION ==========
 function prevMonth() {
-  if (currentMonth===1) { currentMonth=12; currentYear--; } else currentMonth--;
-  document.getElementById('monthLabel').textContent = `${currentYear}年 ${currentMonth}月`;
+  if (currentMonth === 1) { currentMonth = 12; currentYear--; }
+  else currentMonth--;
+  updateMonthLabel();
   refreshAll();
 }
+
 function nextMonth() {
-  const now=new Date();
-  if (currentYear===now.getFullYear() && currentMonth>=now.getMonth()+1) return;
-  if (currentMonth===12) { currentMonth=1; currentYear++; } else currentMonth++;
-  document.getElementById('monthLabel').textContent = `${currentYear}年 ${currentMonth}月`;
+  const now = new Date();
+  const maxMonth = now.getMonth() + 1;
+  const maxYear = now.getFullYear();
+  if (currentYear === maxYear && currentMonth >= maxMonth) return;
+  if (currentMonth === 12) { currentMonth = 1; currentYear++; }
+  else currentMonth++;
+  updateMonthLabel();
   refreshAll();
 }
-async function refreshAll() { await refreshRecords(); updateDashboard(); }
+
+function refreshAll() {
+  updateDashboard();
+  renderMonthRecords();
+  const stats = getMonthStats(records, currentYear, currentMonth);
+  renderReport(stats);
+}
 
 // ========== MODAL ==========
 function openModal(type) {
   currentModalType = type;
-  selectedCategory = type==='income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0];
-  document.getElementById('modalTitle').textContent = type==='income' ? '💰 记一笔收入' : '💸 记一笔支出';
+  selectedCategory = type === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0];
+
+  document.getElementById('modalTitle').textContent = type === 'income' ? '💰 记一笔收入' : '💸 记一笔支出';
   document.getElementById('formDate').value = todayStr();
   document.getElementById('formAmount').value = '';
   document.getElementById('formNote').value = '';
+
   renderChips();
   document.getElementById('modalOverlay').classList.add('show');
-  setTimeout(()=>document.getElementById('formAmount').focus(), 300);
+  setTimeout(() => document.getElementById('formAmount').focus(), 300);
 }
-function closeModalDirect() { document.getElementById('modalOverlay').classList.remove('show'); }
-function closeModal(e) { if (e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('show'); }
-function renderChips() {
-  const cats = currentModalType==='income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  document.getElementById('categoryChips').innerHTML = cats.map(c=>`<span class="chip ${c===selectedCategory?'selected':''}" onclick="selectCategory('${c}')">${c}</span>`).join('');
-}
-function selectCategory(c) { selectedCategory=c; renderChips(); }
 
-// ========== CRUD ==========
-async function saveRecord() {
-  const date = document.getElementById('formDate').value;
-  const amount = parseFloat(document.getElementById('formAmount').value);
-  const note = document.getElementById('formNote').value.trim();
-  if (!date) { showToast('请选择日期'); return; }
-  if (!amount || amount<=0) { showToast('请输入有效金额'); return; }
-
-  const { error } = await supabase.from('records').insert({
-    date, type: currentModalType, category: selectedCategory,
-    amount: Math.round(amount*100)/100, note
-  });
-  if (error) { showToast('保存失败: '+error.message); return; }
-
+function closeModalDirect() {
   document.getElementById('modalOverlay').classList.remove('show');
-  if (date) { const [y,m] = date.split('-').map(Number); currentYear=y; currentMonth=m; }
-  document.getElementById('monthLabel').textContent = `${currentYear}年 ${currentMonth}月`;
-  await refreshAll();
-  showToast(currentModalType==='income'?'✅ 收入已记录':'✅ 支出已记录');
 }
 
-async function deleteRecord(id) {
-  if (!confirm('确定删除？')) return;
-  await supabase.from('records').delete().eq('id', id);
-  await refreshAll();
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+}
+
+function renderChips() {
+  const categories = currentModalType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const container = document.getElementById('categoryChips');
+  container.innerHTML = categories.map(cat => `
+    <span class="chip ${cat === selectedCategory ? 'selected' : ''}" onclick="selectCategory('${cat}')">${cat}</span>
+  `).join('');
+}
+
+function selectCategory(cat) {
+  selectedCategory = cat;
+  renderChips();
+}
+
+// ========== SAVE / DELETE ==========
+function saveRecord() {
+  const date = document.getElementById('formDate').value;
+  const amountStr = document.getElementById('formAmount').value;
+  const note = document.getElementById('formNote').value.trim();
+
+  if (!date) { showToast('请选择日期'); return; }
+  if (!amountStr || parseFloat(amountStr) <= 0) { showToast('请输入有效金额'); return; }
+  if (!selectedCategory) { showToast('请选择类别'); return; }
+
+  const record = {
+    id: genId(),
+    date: date,
+    type: currentModalType,
+    category: selectedCategory,
+    amount: parseFloat(parseFloat(amountStr).toFixed(2)),
+    note: note,
+    createdAt: new Date().toISOString()
+  };
+
+  records.push(record);
+  saveRecords(records);
+  document.getElementById('modalOverlay').classList.remove('show');
+
+  // Sync month to the record's date
+  const [y, m] = date.split('-').map(Number);
+  currentYear = y;
+  currentMonth = m;
+  updateMonthLabel();
+
+  refreshAll();
+  showToast(currentModalType === 'income' ? '✅ 收入已记录' : '✅ 支出已记录');
+}
+
+function deleteRecord(id) {
+  if (!confirm('确定要删除这条记录吗？')) return;
+  records = records.filter(r => r.id !== id);
+  saveRecords(records);
+  refreshAll();
   showToast('已删除');
 }
 
 // ========== TOAST ==========
 function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._tid); t._tid = setTimeout(()=>t.classList.remove('show'), 1800);
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+// ========== BACKUP / RESTORE ==========
+function exportData() {
+  const exportObj = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    totalRecords: records.length,
+    records: records
+  };
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date();
+  const filename = `麻将馆记账_备份_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.json`;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  recordBackup();
+  updateBackupStatus();
+  showToast('📤 备份文件已下载');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.records || !Array.isArray(imported.records)) {
+        throw new Error('格式不正确');
+      }
+
+      // Validate each record
+      for (const r of imported.records) {
+        if (!r.id || !r.date || !r.type || !r.category || typeof r.amount !== 'number') {
+          throw new Error('数据字段不完整');
+        }
+      }
+
+      const count = imported.records.length;
+      // Merge: overwrite records with same ID, add new ones
+      const existingIds = new Set(records.map(r => r.id));
+      const merged = records.filter(r => !imported.records.some(ir => ir.id === r.id));
+      const newRecords = imported.records.filter(r => !existingIds.has(r.id));
+      records = [...merged, ...imported.records];
+      saveRecords(records);
+
+      refreshAll();
+      updateDataStats();
+      showToast(`📥 成功导入 ${count} 条记录`);
+    } catch (err) {
+      showToast('❌ 文件格式错误，请选择正确的备份文件');
+      console.error('Import error:', err);
+    }
+  };
+  reader.readAsText(file);
+  // Reset file input so same file can be imported again
+  event.target.value = '';
+}
+
+function updateDataStats() {
+  const el = document.getElementById('dataStats');
+  if (records.length === 0) {
+    el.innerHTML = '暂无数据，开始记账吧 ✍️';
+    return;
+  }
+  const dates = records.map(r => r.date).sort();
+  const firstDate = dates[0];
+  const lastDate = dates[dates.length - 1];
+  el.innerHTML = `📦 共 <strong>${records.length}</strong> 条记录 ｜ ${firstDate} ~ ${lastDate}`;
 }
 
 // ========== INIT ==========
-async function init() {
-  await refreshRecords();
-  document.getElementById('monthLabel').textContent = `${currentYear}年 ${currentMonth}月`;
+function init() {
+  updateMonthLabel();
   updateDashboard();
+  updateDataStats();
+  updateBackupStatus();
+  // 每次打开页面检查是否需要自动备份（>24h自动执行）
+  setTimeout(() => { autoBackup(false); }, 1500);
 }
 
-// Check existing session
-async function checkSession() {
-  const { data } = await supabase.auth.getSession();
-  if (data.session) {
-    currentUser = data.session.user;
-    document.getElementById('userEmail').textContent = currentUser.email;
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'block';
-    init();
+// init() is called by showMainApp() after login
+</script>
+
+</div><!-- end mainApp -->
+
+<!-- ===== LOGIN SYSTEM ===== -->
+<script>
+// ========== AUTH ==========
+const AUTH_KEY = 'mj_auth_credentials';
+const SESSION_KEY = 'mj_logged_in';
+const DEFAULT_ACCOUNT = 'admin';
+
+function getAuthData() {
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function saveAuthData(data) {
+  localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+}
+
+function hashPassword(pwd) {
+  // Simple hash for client-side (prevents plaintext storage)
+  let hash = 0;
+  for (let i = 0; i < pwd.length; i++) {
+    const char = pwd.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return 'mj_' + Math.abs(hash).toString(36);
+}
+
+function isLoggedIn() {
+  return sessionStorage.getItem(SESSION_KEY) === 'true';
+}
+
+function checkFirstRun() {
+  const auth = getAuthData();
+  if (!auth) {
+    // 首次使用 - 显示设置密码
+    document.getElementById('loginSubtitle').textContent = '首次使用，请设置账号和密码';
+    document.getElementById('loginAccount').value = DEFAULT_ACCOUNT;
+    document.getElementById('loginAccount').readOnly = false;
+    document.getElementById('forgotPwdBtn').style.display = 'none';
+    return true;
+  }
+  return false;
+}
+
+function doLogin() {
+  const account = document.getElementById('loginAccount').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+
+  if (!account) { errorEl.textContent = '请输入账号'; return; }
+  if (!password) { errorEl.textContent = '请输入密码'; return; }
+
+  const auth = getAuthData();
+  const isFirst = !auth;
+
+  if (isFirst) {
+    // 首次设置
+    saveAuthData({
+      account: account,
+      password: hashPassword(password)
+    });
+    sessionStorage.setItem(SESSION_KEY, 'true');
+    showMainApp();
+    showToast('🔒 账号密码已设置');
+    return;
+  }
+
+  // 验证
+  if (account === auth.account && hashPassword(password) === auth.password) {
+    sessionStorage.setItem(SESSION_KEY, 'true');
+    errorEl.textContent = '';
+    showMainApp();
+  } else {
+    errorEl.textContent = '账号或密码错误';
+    document.getElementById('resetHint').style.display = 'block';
+    document.getElementById('forgotPwdBtn').style.display = 'block';
+  }
+}
+
+function showMainApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  init();
+}
+
+function resetPassword() {
+  document.getElementById('resetHint').style.display = 'block';
+}
+
+// 键盘回车登录
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
+    doLogin();
+  }
+});
+
+// ========== INIT ==========
+(function() {
+  const isFirst = checkFirstRun();
+  if (isFirst) {
+    document.getElementById('loginSubtitle').textContent = '首次使用，请设置账号和密码';
+    document.getElementById('forgotPwdBtn').style.display = 'none';
+  }
+
+  // 检查是否已登录
+  if (isLoggedIn()) {
+    showMainApp();
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('mainApp').style.display = 'none';
+    // 默认填入admin账号
+    const auth = getAuthData();
+    if (auth) {
+      document.getElementById('loginAccount').value = auth.account;
+      document.getElementById('loginAccount').readOnly = true;
+    } else {
+      document.getElementById('loginAccount').value = DEFAULT_ACCOUNT;
+    }
+    document.getElementById('loginPassword').focus();
   }
-}
-checkSession();
-
-// Enter key for login
-document.addEventListener('keydown', e => {
-  if (e.key==='Enter' && document.getElementById('loginScreen').style.display!=='none') handleAuth();
-});
+})();
 </script>
+
 </body>
 </html>
