@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="读牌器">
+<meta name="theme-color" content="#1a5c2a">
+<title>麻将读牌器</title>
+<style>
+:root {
+  --bg: #f0f4e8; --card: #fff; --primary: #1a5c2a; --danger: #c62828;
+  --safe: #2e7d32; --warn: #e65100; --text: #333; --text2: #888;
+  --border: #d0d8c0; --radius: 10px;
+  --tile-size: 38px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh; padding: 8px;
+  max-width: 500px; margin: 0 auto; user-select: none;
+}
+
+.header {
+  background: linear-gradient(135deg,#0d3b18,#1a5c2a); color:#fff;
+  padding: 12px 16px; text-align:center; border-radius: var(--radius);
+  margin-bottom: 8px; position: sticky; top: 8px; z-index: 100;
+}
+.header h1 { font-size: 18px; letter-spacing: 2px; }
+.header .sub { font-size: 11px; opacity: 0.8; }
+
+/* Player Tabs */
+.players { display: flex; gap: 4px; margin-bottom: 8px; position: sticky; top: 70px; z-index: 99; }
+.player-tab {
+  flex: 1; padding: 8px 4px; border: none; border-radius: 8px;
+  background: var(--card); font-size: 12px; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06); text-align: center;
+}
+.player-tab.active { background: var(--primary); color: #fff; font-weight: 600; }
+.player-tab .wind { font-size: 16px; display: block; }
+.player-tab .count { font-size: 10px; opacity: 0.7; }
+
+/* Tile Input */
+.tile-section {
+  background: var(--card); border-radius: var(--radius); padding: 10px;
+  margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.tile-section .label { font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 600; }
+.tile-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; justify-content: center; }
+.tile-btn {
+  width: var(--tile-size); height: var(--tile-size); border: 2px solid var(--border);
+  border-radius: 6px; background: #fafaf6; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; font-weight: 500;
+}
+.tile-btn:active { transform: scale(0.92); }
+.tile-btn.used { background: #e0e0e0; color: #bbb; border-color: #ddd; pointer-events: none; }
+.tile-btn:hover { border-color: var(--primary); background: #e8f5e9; }
+
+/* Action buttons */
+.action-row { display: flex; gap: 4px; margin: 6px 0; flex-wrap: wrap; justify-content: center; }
+.action-tag {
+  padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border);
+  background: #fff; font-size: 11px; cursor: pointer;
+}
+.action-tag.chi { border-color: #42a5f5; color: #42a5f5; }
+.action-tag.pon { border-color: #ff7043; color: #ff7043; }
+.action-tag.gang { border-color: #ab47bc; color: #ab47bc; }
+.action-tag.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Analysis Panel */
+.analysis-card {
+  background: var(--card); border-radius: var(--radius); padding: 12px;
+  margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.analysis-card h3 { font-size: 14px; margin-bottom: 8px; }
+.range-bar { display: flex; gap: 3px; flex-wrap: wrap; margin: 6px 0; }
+.range-tile {
+  width: 30px; height: 30px; border-radius: 5px; display: flex;
+  align-items: center; justify-content: center; font-size: 13px;
+  font-weight: 600; border: 2px solid transparent;
+}
+.range-tile.likely-no { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+.range-tile.maybe { background: #fff8e1; color: #e65100; border-color: #ffe082; }
+.range-tile.possible { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+.range-tile.unknown { background: #f5f5f5; color: #ccc; }
+
+.danger-list { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.danger-tile {
+  padding: 6px 12px; border-radius: 16px; font-size: 14px; font-weight: 600;
+  background: #ffcdd2; color: #b71c1c; border: 2px solid #ef5350;
+}
+
+/* History */
+.history { margin-top: 8px; }
+.history-item {
+  display: flex; gap: 6px; align-items: center; padding: 4px 8px;
+  font-size: 12px; background: #f9f9f6; border-radius: 6px; margin-bottom: 3px;
+}
+.history-item .del { color: #ccc; cursor: pointer; font-size: 14px; margin-left: auto; }
+
+/* Legend */
+.legend { display: flex; gap: 12px; font-size: 10px; color: var(--text2); margin-top: 6px; }
+.legend span { display: flex; align-items: center; gap: 4px; }
+.legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+.legend .dot.red { background: #ef9a9a; } .legend .dot.yellow { background: #ffe082; }
+.legend .dot.green { background: #a5d6a7; }
+
+.btn-row { display: flex; gap: 6px; margin: 8px 0; }
+.btn-sm {
+  flex: 1; padding: 10px; border: none; border-radius: 8px;
+  font-size: 13px; cursor: pointer; font-weight: 500;
+}
+.btn-sm.reset { background: #eee; color: #666; }
+.btn-sm.undo { background: #fff3e0; color: #e65100; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🀄 麻将读牌器</h1>
+  <div class="sub">打牌记录 → 自动推理对手牌型</div>
+</div>
+
+<!-- Players -->
+<div class="players" id="playerTabs">
+  <button class="player-tab" data-p="0" onclick="switchPlayer(0)"><span class="wind">🀀</span>对家</button>
+  <button class="player-tab active" data-p="1" onclick="switchPlayer(1)"><span class="wind">🀁</span>下家</button>
+  <button class="player-tab" data-p="2" onclick="switchPlayer(2)"><span class="wind">🀂</span>上家</button>
+  <button class="player-tab" data-p="3" onclick="switchPlayer(3)"><span class="wind">🀃</span>自家</button>
+</div>
+
+<!-- Tile Input -->
+<div class="tile-section">
+  <div class="label">🀙 万子</div>
+  <div class="tile-row" id="row-wan"></div>
+  <div class="label" style="margin-top:8px;">🀐 条子</div>
+  <div class="tile-row" id="row-tiao"></div>
+  <div class="label" style="margin-top:8px;">🀈 筒子</div>
+  <div class="tile-row" id="row-tong"></div>
+  <div class="label" style="margin-top:8px;">🀆 字牌</div>
+  <div class="tile-row" id="row-zi"></div>
+
+  <div class="action-row">
+    <button class="action-tag" id="tag-discard" onclick="setAction('discard')">🀄 打出</button>
+    <button class="action-tag chi" id="tag-chi" onclick="setAction('chi')">🍽 吃 (上家)</button>
+    <button class="action-tag pon" id="tag-pon" onclick="setAction('pon')">🔴 碰</button>
+    <button class="action-tag gang" id="tag-gang" onclick="setAction('gang')">🟣 杠</button>
+  </div>
+</div>
+
+<!-- Analysis -->
+<div class="analysis-card">
+  <h3>📊 <span id="analysisPlayer">下家</span> 牌型推理</h3>
+
+  <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">万子:</div>
+  <div class="range-bar" id="range-wan"></div>
+  <div style="font-size:12px;color:var(--text2);margin:6px 0 4px;">条子:</div>
+  <div class="range-bar" id="range-tiao"></div>
+  <div style="font-size:12px;color:var(--text2);margin:6px 0 4px;">筒子:</div>
+  <div class="range-bar" id="range-tong"></div>
+
+  <div style="margin-top:10px;font-size:13px;font-weight:600;color:#c62828;">⚠️ 危险牌（大概率在等）:</div>
+  <div class="danger-list" id="dangerTiles"></div>
+
+  <div style="margin-top:8px;font-size:12px;color:var(--text2);" id="playerSummary"></div>
+
+  <div class="legend">
+    <span><span class="dot red"></span> 大概率没有</span>
+    <span><span class="dot yellow"></span> 可能没有</span>
+    <span><span class="dot green"></span> 可能还有</span>
+  </div>
+</div>
+
+<!-- History -->
+<div class="tile-section">
+  <div class="label">📝 <span id="historyPlayer">下家</span> 出牌记录</div>
+  <div class="history" id="discardHistory"><div style="color:#ccc;text-align:center;font-size:12px;">暂无记录</div></div>
+</div>
+
+<div class="btn-row">
+  <button class="btn-sm undo" onclick="undoLast()">↩ 撤销</button>
+  <button class="btn-sm reset" onclick="resetAll()">🔄 重置</button>
+</div>
+
+<script>
+// ===== DATA =====
+const WAN = ['1万','2万','3万','4万','5万','6万','7万','8万','9万'];
+const TIAO = ['1条','2条','3条','4条','5条','6条','7条','8条','9条'];
+const TONG = ['1筒','2筒','3筒','4筒','5筒','6筒','7筒','8筒','9筒'];
+const ZI = ['东','南','西','北','中','发','白'];
+
+const SUITS = { wan: WAN, tiao: TIAO, tong: TONG };
+const PLAYER_NAMES = ['对家','下家','上家','自家'];
+
+let currentPlayer = 1; // 默认下家
+let currentAction = 'discard';
+
+// 每人打出的牌 {player: [{tile, action, time}]}
+let discards = { 0:[], 1:[], 2:[], 3:[] };
+// 每人打出的牌 Set（用于快速判断）
+let discardedSets = { 0: new Set(), 1: new Set(), 2: new Set(), 3: new Set() };
+// 每人吃碰的牌
+let melds = { 0:[], 1:[], 2:[], 3:[] };
+
+// ===== RENDER TILE BUTTONS =====
+function buildTileRow(containerId, tiles, suitKey) {
+  const row = document.getElementById(containerId);
+  row.innerHTML = tiles.map(t => {
+    const cls = isDiscarded(t) ? 'tile-btn used' : 'tile-btn';
+    return `<button class="${cls}" onclick="clickTile('${t}', '${suitKey}')">${t}</button>`;
+  }).join('');
+}
+
+function renderAllTiles() {
+  buildTileRow('row-wan', WAN, 'wan');
+  buildTileRow('row-tiao', TIAO, 'tiao');
+  buildTileRow('row-tong', TONG, 'tong');
+  buildTileRow('row-zi', ZI, 'zi');
+}
+
+function isDiscarded(tile) {
+  return discardedSets[currentPlayer].has(tile);
+}
+
+function clickTile(tile, suit) {
+  if (isDiscarded(tile)) return;
+
+  discards[currentPlayer].push({
+    tile: tile,
+    action: currentAction,
+    suit: suit,
+    time: Date.now()
+  });
+  discardedSets[currentPlayer].add(tile);
+
+  renderAllTiles();
+  renderAnalysis();
+  renderHistory();
+  updatePlayerTabs();
+}
+
+// ===== ACTIONS =====
+function setAction(action) {
+  currentAction = action;
+  document.querySelectorAll('.action-tag').forEach(t => t.classList.remove('active'));
+  document.getElementById('tag-' + action).classList.add('active');
+}
+
+// ===== PLAYER SWITCH =====
+function switchPlayer(p) {
+  currentPlayer = p;
+  document.querySelectorAll('.player-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-p="${p}"]`).classList.add('active');
+  document.getElementById('analysisPlayer').textContent = PLAYER_NAMES[p];
+  document.getElementById('historyPlayer').textContent = PLAYER_NAMES[p];
+  renderAllTiles();
+  renderAnalysis();
+  renderHistory();
+}
+
+function updatePlayerTabs() {
+  for (let p=0; p<4; p++) {
+    const tab = document.querySelector(`[data-p="${p}"]`);
+    const count = discards[p].length;
+    tab.querySelector('.count').textContent = count ? `${count}张` : '';
+  }
+}
+
+// ===== ANALYSIS =====
+function analyzePlayer(p) {
+  const discarded = discards[p];
+  const playerSet = discardedSets[p];
+
+  if (discarded.length === 0) {
+    return { ranges: {}, dangers: [], summary: '暂无出牌记录' };
+  }
+
+  // 对每张打出的牌，推算 ±2 范围
+  const likelyNo = {}; // 大概率没有
+  const scores = {}; // 可能没有的计分
+
+  for (const suit of ['wan','tiao','tong']) {
+    likelyNo[suit] = new Set();
+    scores[suit] = {};
+    for (const t of SUITS[suit]) scores[suit][t] = 0;
+  }
+
+  for (const d of discarded) {
+    const tile = d.tile;
+    const suit = d.suit;
+    if (!SUITS[suit]) continue;
+
+    const idx = SUITS[suit].indexOf(tile);
+    if (idx === -1) continue;
+
+    // ±2 范围标记为"大概率没有"
+    for (let i = Math.max(0, idx-2); i <= Math.min(8, idx+2); i++) {
+      const t = SUITS[suit][i];
+      if (!playerSet.has(t)) {
+        likelyNo[suit].add(t);
+        scores[suit][t] += (3 - Math.abs(idx - i)); // 越近计分越高
+      }
+    }
+  }
+
+  // 危险牌：不在"大概率没有"范围、且不在已打出的牌中
+  const dangers = [];
+  for (const suit of ['wan','tiao','tong']) {
+    for (const t of SUITS[suit]) {
+      if (!playerSet.has(t) && !likelyNo[suit].has(t)) {
+        dangers.push(t);
+      }
+    }
+  }
+
+  // 生成总结
+  const noRanges = [];
+  for (const suit of ['wan','tiao','tong']) {
+    const nos = [...likelyNo[suit]].sort((a,b) => SUITS[suit].indexOf(a) - SUITS[suit].indexOf(b));
+    if (nos.length > 0) {
+      noRanges.push(`${['万','条','筒'][['wan','tiao','tong'].indexOf(suit)]}: ${nos[0]}~${nos[nos.length-1]}`);
+    }
+  }
+
+  let summary = '';
+  if (noRanges.length > 0) {
+    summary = `大概率没有: ${noRanges.join('; ')}`;
+  }
+  if (dangers.length > 0 && dangers.length <= 9) {
+    summary += `\n可能在等: ${dangers.join('、')}`;
+  }
+
+  return { ranges: likelyNo, dangers, summary, scores };
+}
+
+function renderAnalysis() {
+  const analysis = analyzePlayer(currentPlayer);
+  const emptySet = new Set();
+
+  for (const suit of ['wan','tiao','tong']) {
+    const container = document.getElementById('range-' + suit);
+    const tiles = SUITS[suit];
+    const nos = analysis.ranges[suit] || emptySet;
+    const playerSet = discardedSets[currentPlayer];
+
+    container.innerHTML = tiles.map(t => {
+      let cls = 'range-tile unknown';
+      if (playerSet.has(t)) {
+        cls = 'range-tile likely-no'; // 已打出
+      } else if (nos.has(t)) {
+        cls = 'range-tile likely-no'; // 大概率没有
+      } else {
+        cls = 'range-tile possible'; // 可能还有
+      }
+      return `<span class="${cls}">${t}</span>`;
+    }).join('');
+  }
+
+  // 危险牌
+  const dangerDiv = document.getElementById('dangerTiles');
+  if (analysis.dangers.length === 0) {
+    dangerDiv.innerHTML = '<span style="color:#999;font-size:12px;">暂无明确危险牌</span>';
+  } else if (analysis.dangers.length <= 12) {
+    dangerDiv.innerHTML = analysis.dangers.map(t => `<span class="danger-tile">${t}</span>`).join('');
+  } else {
+    dangerDiv.innerHTML = '<span style="color:#999;font-size:12px;">出牌太少，范围太宽</span>';
+  }
+
+  document.getElementById('playerSummary').textContent = analysis.summary;
+}
+
+// ===== HISTORY =====
+function renderHistory() {
+  const container = document.getElementById('discardHistory');
+  const playerDiscards = discards[currentPlayer];
+  if (playerDiscards.length === 0) {
+    container.innerHTML = '<div style="color:#ccc;text-align:center;font-size:12px;">暂无记录</div>';
+    return;
+  }
+
+  const actionIcons = { discard: '', chi: '🍽', pon: '🔴', gang: '🟣' };
+  container.innerHTML = [...playerDiscards].reverse().map((d,i) => `
+    <div class="history-item">
+      <span>${actionIcons[d.action]||''} ${d.tile}</span>
+      ${d.action !== 'discard' ? `<span style="font-size:10px;color:#999;">${d.action}</span>` : ''}
+      <span class="del" onclick="removeDiscard(${playerDiscards.length-1-i})">✕</span>
+    </div>
+  `).join('');
+}
+
+function removeDiscard(idx) {
+  const removed = discards[currentPlayer][idx];
+  discards[currentPlayer].splice(idx, 1);
+  // 重建 set
+  discardedSets[currentPlayer] = new Set(discards[currentPlayer].map(d => d.tile));
+  renderAllTiles();
+  renderAnalysis();
+  renderHistory();
+  updatePlayerTabs();
+}
+
+// ===== UNDO / RESET =====
+function undoLast() {
+  if (discards[currentPlayer].length === 0) return;
+  discards[currentPlayer].pop();
+  discardedSets[currentPlayer] = new Set(discards[currentPlayer].map(d => d.tile));
+  renderAllTiles();
+  renderAnalysis();
+  renderHistory();
+  updatePlayerTabs();
+}
+
+function resetAll() {
+  if (!confirm('确定重置所有人数据？')) return;
+  discards = { 0:[], 1:[], 2:[], 3:[] };
+  discardedSets = { 0:new Set(), 1:new Set(), 2:new Set(), 3:new Set() };
+  renderAllTiles();
+  renderAnalysis();
+  renderHistory();
+  updatePlayerTabs();
+}
+
+// ===== INIT =====
+renderAllTiles();
+renderAnalysis();
+setAction('discard');
+document.getElementById('tag-discard').classList.add('active');
+</script>
+</body>
+</html>
