@@ -79,7 +79,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 27px;
   font-weight: 700;
   cursor: pointer;
   user-select: none;
@@ -113,6 +114,7 @@ body {
 .hand-tile {
   width: 34px;
   height: 34px;
+  font-size: 24px;
   border-color: #b9caba;
   position: relative;
 }
@@ -223,6 +225,56 @@ select {
   font-size: 11px;
   line-height: 1.45;
 }
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.stat-card {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #f8fbf6;
+  padding: 8px;
+  text-align: center;
+}
+.stat-card strong { display: block; font-size: 16px; color: var(--primary); }
+.stat-card span { color: var(--text2); font-size: 11px; }
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.choice-btn {
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 4px;
+  background: #fff;
+  color: var(--text);
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.choice-btn.selected { border-color: var(--primary); background: #e9f5ed; color: var(--primary); }
+.choice-btn.correct { border-color: var(--ok); background: #dff4e6; color: var(--ok); }
+.choice-btn.wrong { border-color: var(--bad); background: #ffe2e6; color: var(--bad); }
+.mistake-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 9px;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mistake-item strong { color: var(--primary); }
+.tile-inline {
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1.45em;
+  line-height: .8;
+  vertical-align: -0.12em;
+}
 @media (min-width: 760px) {
   .page { padding-top: 18px; }
   .float-card { position: sticky; top: 12px; }
@@ -238,9 +290,31 @@ select {
     </div>
 
     <div class="section">
+      <div class="title">8 番训练器 <span class="hint">先猜出牌，再看答案</span></div>
+      <div class="mini-stats">
+        <div class="stat-card"><strong id="trainDone">0</strong><span>已练</span></div>
+        <div class="stat-card"><strong id="trainRight">0</strong><span>答对</span></div>
+        <div class="stat-card"><strong id="mistakeCount">0</strong><span>错题</span></div>
+      </div>
+      <div class="status" id="trainingPrompt">
+        <h2>点击“新题”开始</h2>
+        <p>系统会生成一副 14 张手牌，你先判断该打哪张，再查看推荐理由。</p>
+      </div>
+      <div id="trainingChoices" class="choice-grid"></div>
+      <div class="toolbar">
+        <button class="btn primary" onclick="newTrainingQuestion()">新题</button>
+        <button class="btn warn" onclick="revealTrainingAnswer()">看答案</button>
+        <button class="btn" onclick="toggleMistakes()">错题本</button>
+        <button class="btn bad" onclick="clearMistakes()">清错题</button>
+      </div>
+      <div id="trainingFeedback" class="note"></div>
+      <div id="mistakeBook" class="rec-list" style="display:none;margin-top:10px;"></div>
+    </div>
+
+    <div class="section">
       <div class="title">
         <span>当前手牌 <span id="tileCount" class="badge">0 / 14</span></span>
-        <span class="hint">点手牌可移除</span>
+        <span class="hint">自动按万/条/筒/字排序</span>
       </div>
       <div class="hand-area" id="handArea"></div>
       <div class="toolbar">
@@ -285,21 +359,39 @@ select {
 
 <script>
 const TILES = [
-  ...Array.from({ length: 9 }, (_, i) => ({ code: `${i + 1}m`, label: `${i + 1}万`, suit: 'm', rank: i + 1 })),
-  ...Array.from({ length: 9 }, (_, i) => ({ code: `${i + 1}s`, label: `${i + 1}条`, suit: 's', rank: i + 1 })),
-  ...Array.from({ length: 9 }, (_, i) => ({ code: `${i + 1}p`, label: `${i + 1}筒`, suit: 'p', rank: i + 1 })),
-  { code: 'E', label: '东', suit: 'z', rank: 1 },
-  { code: 'S', label: '南', suit: 'z', rank: 2 },
-  { code: 'W', label: '西', suit: 'z', rank: 3 },
-  { code: 'N', label: '北', suit: 'z', rank: 4 },
-  { code: 'C', label: '中', suit: 'z', rank: 5 },
-  { code: 'F', label: '发', suit: 'z', rank: 6 },
-  { code: 'P', label: '白', suit: 'z', rank: 7 },
+  ...['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏'].map((symbol, i) => ({ code: `${i + 1}m`, label: `${i + 1}万`, symbol, suit: 'm', rank: i + 1 })),
+  ...['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'].map((symbol, i) => ({ code: `${i + 1}s`, label: `${i + 1}条`, symbol, suit: 's', rank: i + 1 })),
+  ...['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'].map((symbol, i) => ({ code: `${i + 1}p`, label: `${i + 1}筒`, symbol, suit: 'p', rank: i + 1 })),
+  { code: 'E', label: '东', symbol: '🀀', suit: 'z', rank: 1 },
+  { code: 'S', label: '南', symbol: '🀁', suit: 'z', rank: 2 },
+  { code: 'W', label: '西', symbol: '🀂', suit: 'z', rank: 3 },
+  { code: 'N', label: '北', symbol: '🀃', suit: 'z', rank: 4 },
+  { code: 'C', label: '中', symbol: '🀄', suit: 'z', rank: 5 },
+  { code: 'F', label: '发', symbol: '🀅', suit: 'z', rank: 6 },
+  { code: 'P', label: '白', symbol: '🀆', suit: 'z', rank: 7 },
 ];
 
 const TERMINAL_OR_HONOR = new Set([0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33]);
 const ORPHANS = new Set([0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33]);
 let counts = Array(34).fill(0);
+const TRAINING_KEY = 'mcr_helper_training_v1';
+const MISTAKE_KEY = 'mcr_helper_mistakes_v1';
+const TRAINING_BANK = [
+  { title: '清龙听牌路线', codes: ['1m','1m','2m','3m','4m','5m','6m','7m','8m','9m','2s','3s','4s','C'] },
+  { title: '花龙进张路线', codes: ['1m','2m','3m','4s','5s','6s','7p','8p','9p','3m','4m','5m','E','C'] },
+  { title: '七对判断路线', codes: ['1m','1m','2m','2m','3m','3m','4s','4s','5s','5s','6p','6p','E','C'] },
+  { title: '混一色取舍路线', codes: ['1p','2p','3p','4p','5p','6p','7p','8p','9p','E','E','C','C','F'] },
+  { title: '碰碰和取舍路线', codes: ['2m','2m','2m','5s','5s','5s','8p','8p','8p','E','E','C','F','P'] },
+  { title: '断幺平和路线', codes: ['2m','3m','4m','3m','4m','5m','4s','5s','6s','6p','7p','8p','E','C'] },
+];
+let trainingState = {
+  current: null,
+  answer: null,
+  selected: null,
+  revealed: false,
+  showMistakes: false,
+};
+let lastTrainingIndex = -1;
 
 function totalTiles(c = counts) {
   return c.reduce((sum, n) => sum + n, 0);
@@ -307,6 +399,40 @@ function totalTiles(c = counts) {
 
 function cloneCounts(c = counts) {
   return c.slice();
+}
+
+function tileIndex(code) {
+  return TILES.findIndex(t => t.code === code);
+}
+
+function tileFace(i) {
+  return TILES[i]?.symbol || '';
+}
+
+function tileHtml(i) {
+  const tile = TILES[i];
+  return `<span class="tile-inline" title="${tile.label}" aria-label="${tile.label}">${tile.symbol}</span>`;
+}
+
+function countsFromCodes(codes) {
+  const result = Array(34).fill(0);
+  codes.forEach(code => {
+    const i = tileIndex(code);
+    if (i !== -1) result[i]++;
+  });
+  return result;
+}
+
+function handCodesFromCounts(c = counts) {
+  const codes = [];
+  c.forEach((n, i) => {
+    for (let k = 0; k < n; k++) codes.push(TILES[i].code);
+  });
+  return codes;
+}
+
+function setCountsFromCodes(codes) {
+  counts = countsFromCodes(codes);
 }
 
 function addTile(i) {
@@ -321,8 +447,20 @@ function removeTile(i) {
   render();
 }
 
+function handleHandTileClick(i) {
+  if (trainingState.current) {
+    selectTrainingDiscard(i);
+    return;
+  }
+  removeTile(i);
+}
+
 function clearHand() {
   counts = Array(34).fill(0);
+  trainingState.current = null;
+  trainingState.answer = null;
+  trainingState.selected = null;
+  trainingState.revealed = false;
   render();
 }
 
@@ -331,10 +469,7 @@ function sortHand() {
 }
 
 function loadExample() {
-  counts = Array(34).fill(0);
-  ['1m','2m','3m','4m','5m','6m','7m','8m','9m','2s','3s','4s','C','C'].forEach(code => {
-    counts[TILES.findIndex(t => t.code === code)]++;
-  });
+  setCountsFromCodes(['1m','2m','3m','4m','5m','6m','7m','8m','9m','2s','3s','4s','C','C']);
   document.getElementById('selfDrawn').checked = false;
   render();
 }
@@ -357,7 +492,7 @@ function buildPicker() {
       ${TILES.slice(start, end).map((tile, offset) => {
         const i = start + offset;
         const disabled = counts[i] >= 4 || totalTiles() >= 14 ? 'disabled' : '';
-        return `<button class="tile-btn" ${disabled} onclick="addTile(${i})">${tile.label}</button>`;
+        return `<button class="tile-btn" ${disabled} onclick="addTile(${i})" title="${tile.label}" aria-label="${tile.label}">${tile.symbol}</button>`;
       }).join('')}
     </div>
   `).join('');
@@ -368,7 +503,7 @@ function renderHand() {
   const items = [];
   counts.forEach((n, i) => {
     for (let k = 0; k < n; k++) {
-      items.push(`<button class="hand-tile" onclick="removeTile(${i})">${TILES[i].label}</button>`);
+      items.push(`<button class="hand-tile" onclick="handleHandTileClick(${i})" title="${TILES[i].label}" aria-label="${TILES[i].label}">${tileFace(i)}</button>`);
     }
   });
   area.innerHTML = items.length ? items.join('') : '<span class="empty">点击下方牌面录入手牌</span>';
@@ -379,6 +514,195 @@ function render() {
   buildPicker();
   renderHand();
   renderResult();
+  renderTraining();
+}
+
+function safeReadJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function safeWriteJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (_) {
+    // 本地文件模式通常可写；隐私模式不可写时只是不保存训练记录。
+  }
+}
+
+function getTrainingStats() {
+  return safeReadJson(TRAINING_KEY, { done: 0, right: 0 });
+}
+
+function saveTrainingStats(stats) {
+  safeWriteJson(TRAINING_KEY, stats);
+}
+
+function getMistakes() {
+  return safeReadJson(MISTAKE_KEY, []);
+}
+
+function saveMistakes(mistakes) {
+  safeWriteJson(MISTAKE_KEY, mistakes.slice(0, 30));
+}
+
+function newTrainingQuestion() {
+  let nextIndex = Math.floor(Math.random() * TRAINING_BANK.length);
+  if (TRAINING_BANK.length > 1 && nextIndex === lastTrainingIndex) {
+    nextIndex = (nextIndex + 1) % TRAINING_BANK.length;
+  }
+  lastTrainingIndex = nextIndex;
+  const item = TRAINING_BANK[nextIndex];
+  setCountsFromCodes(item.codes);
+  document.getElementById('selfDrawn').checked = false;
+  trainingState = {
+    current: { ...item, codes: item.codes.slice() },
+    answer: null,
+    selected: null,
+    revealed: false,
+    showMistakes: false,
+  };
+  const recs = recommendDiscards(counts, currentOptions());
+  trainingState.answer = recs[0] || null;
+  render();
+}
+
+function selectTrainingDiscard(tile) {
+  if (!trainingState.current || trainingState.revealed) return;
+  trainingState.selected = tile;
+  renderTraining();
+}
+
+function revealTrainingAnswer() {
+  if (!trainingState.current) {
+    newTrainingQuestion();
+    return;
+  }
+  if (trainingState.selected === null) {
+    document.getElementById('trainingFeedback').textContent = '先点一个你认为应该打出的牌，再看答案。';
+    return;
+  }
+  trainingState.revealed = true;
+  const stats = getTrainingStats();
+  stats.done += 1;
+  const isRight = trainingState.answer && trainingState.selected === trainingState.answer.discard;
+  if (isRight) {
+    stats.right += 1;
+  } else {
+    addMistake();
+  }
+  saveTrainingStats(stats);
+  renderTraining();
+}
+
+function addMistake() {
+  if (!trainingState.current || !trainingState.answer) return;
+  const mistakes = getMistakes();
+  mistakes.unshift({
+    time: Date.now(),
+    title: trainingState.current.title,
+    codes: handCodesFromCounts(),
+    selected: trainingState.selected,
+    answer: trainingState.answer.discard,
+    reason: explainRecommendation(trainingState.answer),
+  });
+  saveMistakes(mistakes);
+}
+
+function toggleMistakes() {
+  trainingState.showMistakes = !trainingState.showMistakes;
+  renderTraining();
+}
+
+function clearMistakes() {
+  saveMistakes([]);
+  trainingState.showMistakes = true;
+  renderTraining();
+}
+
+function loadMistake(index) {
+  const mistake = getMistakes()[index];
+  if (!mistake) return;
+  setCountsFromCodes(mistake.codes);
+  trainingState = {
+    current: { title: mistake.title, codes: mistake.codes.slice() },
+    answer: recommendDiscards(counts, currentOptions())[0] || null,
+    selected: mistake.selected,
+    revealed: true,
+    showMistakes: false,
+  };
+  render();
+}
+
+function renderTraining() {
+  const prompt = document.getElementById('trainingPrompt');
+  if (!prompt) return;
+  const stats = getTrainingStats();
+  const mistakes = getMistakes();
+  document.getElementById('trainDone').textContent = stats.done;
+  document.getElementById('trainRight').textContent = stats.right;
+  document.getElementById('mistakeCount').textContent = mistakes.length;
+
+  if (!trainingState.current) {
+    prompt.className = 'status';
+    prompt.innerHTML = '<h2>点击“新题”开始</h2><p>系统会生成一副 14 张手牌。训练模式下，点下方手牌或候选按钮都是选择答案，不会删除牌。</p>';
+    document.getElementById('trainingChoices').innerHTML = '';
+    document.getElementById('trainingFeedback').textContent = '';
+    renderMistakeBook(mistakes);
+    return;
+  }
+
+  const selected = trainingState.selected;
+  const answer = trainingState.answer;
+  const isRight = trainingState.revealed && answer && selected === answer.discard;
+  prompt.className = `status ${trainingState.revealed ? (isRight ? 'ok' : 'bad') : 'warn'}`;
+  prompt.innerHTML = `
+    <h2>${trainingState.current.title}</h2>
+    <p>${trainingState.revealed
+      ? (answer ? (isRight ? '答对了，继续保持这种牌效判断。' : `答错了，推荐打 ${tileHtml(answer.discard)}。`) : '这题暂时没有可用推荐。')
+      : '本题手牌已填在下方。点手牌或候选按钮选择你认为最该打出的牌，然后点“看答案”。'}</p>
+  `;
+
+  const uniqueTiles = counts.map((n, i) => n > 0 ? i : -1).filter(i => i !== -1);
+  document.getElementById('trainingChoices').innerHTML = uniqueTiles.map(i => {
+    let cls = 'choice-btn';
+    if (selected === i) cls += ' selected';
+    if (trainingState.revealed && answer && i === answer.discard) cls += ' correct';
+    if (trainingState.revealed && selected === i && answer && i !== answer.discard) cls += ' wrong';
+    return `<button class="${cls}" onclick="selectTrainingDiscard(${i})" title="${TILES[i].label}" aria-label="${TILES[i].label}">${tileFace(i)}</button>`;
+  }).join('');
+
+  document.getElementById('trainingFeedback').innerHTML = trainingState.revealed && answer
+    ? `<strong>答案解析：</strong>${explainRecommendation(answer)}`
+    : '训练思路：优先看能不能听牌，再看有效牌数量，最后看摸到哪些牌能满足 8 番。';
+  renderMistakeBook(mistakes);
+}
+
+function renderMistakeBook(mistakes = getMistakes()) {
+  const book = document.getElementById('mistakeBook');
+  if (!book) return;
+  if (!trainingState.showMistakes) {
+    book.style.display = 'none';
+    book.innerHTML = '';
+    return;
+  }
+  book.style.display = 'flex';
+  if (mistakes.length === 0) {
+    book.innerHTML = '<div class="mistake-item">暂无错题。做题答错后会自动保存到这里。</div>';
+    return;
+  }
+  book.innerHTML = mistakes.map((m, idx) => `
+    <div class="mistake-item">
+      <strong>${idx + 1}. ${m.title}</strong><br>
+      你打：${m.selected === null ? '未选择' : tileHtml(m.selected)}；推荐：${tileHtml(m.answer)}<br>
+      ${m.reason}<br>
+      <button class="btn" onclick="loadMistake(${idx})" style="margin-top:6px;">重练这题</button>
+    </div>
+  `).join('');
 }
 
 function isNumberTile(i) {
@@ -556,10 +880,10 @@ function shapeFans(c, groups, options) {
 
   for (const pung of pungs) {
     const tile = TILES[pung.tile];
-    if (['C', 'F', 'P'].includes(tile.code)) fans.push({ name: `箭刻(${tile.label})`, points: 2 });
+    if (['C', 'F', 'P'].includes(tile.code)) fans.push({ name: `箭刻(${tile.symbol})`, points: 2 });
     if (tile.code === options.roundWind) fans.push({ name: '圈风刻', points: 2 });
     if (tile.code === options.seatWind) fans.push({ name: '门风刻', points: 2 });
-    if (TERMINAL_OR_HONOR.has(pung.tile)) fans.push({ name: `幺九刻(${tile.label})`, points: 1 });
+    if (TERMINAL_OR_HONOR.has(pung.tile)) fans.push({ name: `幺九刻(${tile.symbol})`, points: 1 });
   }
 
   fans.push({ name: '门前清', points: 2 });
@@ -780,19 +1104,29 @@ function renderFans(fans) {
   `).join('')}</div>`;
 }
 
+function explainRecommendation(rec) {
+  if (!rec) return '暂无推荐理由。';
+  const usefulLabels = rec.useful.slice(0, 12).map(i => tileHtml(i)).join('、') || '暂无';
+  const more = rec.useful.length > 12 ? '…' : '';
+  const best = rec.bestWin
+    ? `摸 ${tileHtml(rec.bestWin.tile)} 可按最高 ${rec.bestWin.points} 番估算${rec.bestWin.points >= 8 ? '，可过 8 番' : '，未满 8 番'}。`
+    : '下一手暂无直接 8 番和牌提示。';
+  return `推荐打 ${tileHtml(rec.discard)}：${shantenText(rec.shanten)}，有效牌 ${rec.available} 枚（${usefulLabels}${more}）。${best}`;
+}
+
 function renderRecommendations(recs) {
   if (!recs.length) return '';
   return `<div class="rec-list" style="margin-top:10px">
     ${recs.map((rec, idx) => {
-      const usefulLabels = rec.useful.slice(0, 12).map(i => TILES[i].label).join('、') || '暂无';
+      const usefulLabels = rec.useful.slice(0, 12).map(i => tileHtml(i)).join('、') || '暂无';
       const best = rec.bestWin
-        ? `摸 ${TILES[rec.bestWin.tile].label} 可按最高 ${rec.bestWin.points} 番估算${rec.bestWin.points >= 8 ? '，可过 8 番' : '，未满 8 番'}`
+        ? `摸 ${tileHtml(rec.bestWin.tile)} 可按最高 ${rec.bestWin.points} 番估算${rec.bestWin.points >= 8 ? '，可过 8 番' : '，未满 8 番'}`
         : '下一手暂无直接 8 番和牌提示';
       const badgeClass = rec.bestWin && rec.bestWin.points >= 8 ? 'ok' : (rec.shanten === 0 ? 'warn' : '');
       return `
         <div class="rec-item">
           <div class="rec-head">
-            <span>${idx + 1}. 打 ${TILES[rec.discard].label}</span>
+            <span>${idx + 1}. 打 ${tileHtml(rec.discard)}</span>
             <span class="badge ${badgeClass}">${shantenText(rec.shanten)}</span>
           </div>
           <div class="rec-meta">
