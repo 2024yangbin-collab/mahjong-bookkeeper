@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="人脸考勤">
+<meta name="theme-color" content="#1a73e8">
+<title>人脸考勤 - 2026-06-07</title>
+<style>
+:root { --bg:#f0f2f5; --card:#fff; --primary:#1a73e8; --success:#0d904f; --warning:#e37400; --text:#202124; --text2:#5f6368; --radius:12px; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:16px; max-width:500px; margin:0 auto; }
+.header { background:linear-gradient(135deg,#1a73e8,#1557b0); color:#fff; padding:20px; border-radius:var(--radius); text-align:center; margin-bottom:16px; }
+.header h1 { font-size:20px; }
+.header .sub { font-size:13px; opacity:0.85; margin-top:4px; }
+.card { background:var(--card); border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.card h3 { font-size:15px; margin-bottom:10px; }
+.person { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee; }
+.person:last-child { border-bottom:none; }
+.person .name { font-size:16px; font-weight:500; }
+.person .info { font-size:12px; color:var(--text2); }
+.person .count { font-size:13px; color:var(--success); font-weight:600; }
+.stranger { display:flex; align-items:center; padding:6px 0; gap:10px; }
+.stranger .time { font-size:13px; color:var(--warning); }
+.summary { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.summary-item { background:var(--card); border-radius:var(--radius); padding:14px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.summary-item .num { font-size:28px; font-weight:700; }
+.summary-item .lbl { font-size:12px; color:var(--text2); }
+.footer { text-align:center; font-size:11px; color:var(--text2); padding:12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📋 人脸考勤看板</h1>
+  <div class="sub">2026-06-07 · 15:54 更新</div>
+</div>
+
+<div class="summary">
+  <div class="summary-item"><div class="num" style="color:var(--success);">2</div><div class="lbl">✅ 已注册客户</div></div>
+  <div class="summary-item"><div class="num" style="color:var(--warning);">5</div><div class="lbl">⚠️ 陌生人</div></div>
+</div>
+
+<div class="card">
+  <h3>✅ 已注册客户 (2人)</h3>
+  <div class="person"><div><div class="name">杨彬</div><div class="info">11:38:24 · 相似度92%</div></div><div class="count">3次</div></div><div class="person"><div><div class="name">娘家张家段里</div><div class="info">13:31:16 · 相似度92%</div></div><div class="count">1次</div></div>
+</div>
+
+<div class="card">
+  <h3>⚠️ 陌生人 (5次)</h3>
+  <div class="stranger">📷<span class="time">11:23:28</span></div><div class="stranger">📷<span class="time">11:23:31</span></div><div class="stranger">📷<span class="time">11:25:00</span></div><div class="stranger">📷<span class="time">11:25:04</span></div><div class="stranger">📷<span class="time">13:12:45</span></div>
+</div>
+
+<div class="footer">
+  🤖 自动生成 · 15:54:49<br>
+  <a href="index.html">麻将馆记账本</a>
+</div>
+</body>
+</html>
