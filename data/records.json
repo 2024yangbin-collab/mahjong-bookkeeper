@@ -1,7 +1,25 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-08T08:55:28.016Z",
+  "updatedAt": "2026-06-08T08:59:18.090Z",
   "records": [
+    {
+      "id": "mq3fmh0sw56hem",
+      "date": "2026-06-07",
+      "type": "income",
+      "category": "台费",
+      "amount": 500,
+      "note": "",
+      "createdAt": "2026-06-07T06:59:52.108Z"
+    },
+    {
+      "id": "mq4yde705w66js",
+      "date": "2026-06-08",
+      "type": "expense",
+      "category": "水电费",
+      "amount": 1,
+      "note": "",
+      "createdAt": "2026-06-08T08:32:27.420Z"
+    },
     {
       "id": "mq4xcsli1eplzl",
       "date": "2026-06-08",
