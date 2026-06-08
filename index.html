@@ -1422,7 +1422,7 @@ async function doLogin() {
   const errorEl = document.getElementById('loginError');
   if (!account) { errorEl.textContent = '请输入账号'; return; }
   if (!password) { errorEl.textContent = '请输入密码'; return; }
-  if (password.length < 6) { errorEl.textContent = '密码至少 6 位'; return; }
+  if (password.length < 5) { errorEl.textContent = '密码至少 5 位'; return; }
   if (!isCloudEnabled()) { errorEl.textContent = '请先完成云端配置'; showSetupScreen(); return; }
   const client = getSupabaseClient();
   const email = accountToEmail(account);
