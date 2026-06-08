@@ -1500,7 +1500,9 @@ async function doLogin() {
   } catch (e) {
     errorEl.textContent = '云端：' + formatCloudError(e);
     await showMainApp();
-    showToast('⚠️ 本地可用，请点「重新同步云端」重试');
+    showToast(isMobileDevice()
+      ? '⚠️ 手机流量可能连不上云端，请换 WiFi 后点「重新同步云端」'
+      : '⚠️ 本地可用，请点「重新同步云端」重试');
   }
 }
 

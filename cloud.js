@@ -3,7 +3,19 @@
  */
 let supabaseClient = null;
 let cloudSyncReady = false;
-const CLOUD_TIMEOUT_MS = 20000;
+
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+}
+
+function getCloudTimeout() {
+  return isMobileDevice() ? 45000 : 20000;
+}
+
+function isNetworkError(e) {
+  const msg = (e && (e.message || e.error_description || String(e))) || '';
+  return /fetch|network|timeout|超时|获取失败|Failed|abort|连接/i.test(msg);
+}
 
 function withTimeout(promise, ms, message) {
   return Promise.race([
@@ -12,9 +24,28 @@ function withTimeout(promise, ms, message) {
   ]);
 }
 
+async function withRetry(fn, attempts) {
+  const total = attempts || (isMobileDevice() ? 3 : 2);
+  let lastError;
+  for (let i = 0; i < total; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      if (!isNetworkError(e) || i === total - 1) throw e;
+      await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+    }
+  }
+  throw lastError;
+}
+
 function formatCloudError(e) {
   const msg = (e && (e.message || e.error_description || String(e))) || '未知错误';
-  if (/fetch|network|timeout|超时|获取失败|Failed/i.test(msg)) return '网络不通';
+  if (isNetworkError(e)) {
+    return isMobileDevice()
+      ? '手机网络无法访问云端，请换 WiFi 后重试'
+      : '网络不通，请检查网络后重试';
+  }
   return msg;
 }
 
@@ -109,31 +140,34 @@ async function syncCloudAuth(account, password) {
   const client = getSupabaseClient();
   if (!client) throw new Error('云端未配置');
   const email = accountToEmail(account);
-  let result = await withTimeout(
-    client.auth.signInWithPassword({ email, password }),
-    CLOUD_TIMEOUT_MS,
-    '云端连接超时'
-  );
-  if (result.error) {
-    const msg = result.error.message || '';
-    if (/invalid login|invalid_credentials|密码|password/i.test(msg)) {
-      result = await withTimeout(
-        client.auth.signUp({ email, password }),
-        CLOUD_TIMEOUT_MS,
-        '云端连接超时'
-      );
-      if (result.error) {
-        if (/already registered|already exists/i.test(result.error.message || '')) {
-          throw new Error('云端密码不对，请在 Supabase 用户管理重置');
+  const timeout = getCloudTimeout();
+  return withRetry(async () => {
+    let result = await withTimeout(
+      client.auth.signInWithPassword({ email, password }),
+      timeout,
+      '云端连接超时'
+    );
+    if (result.error) {
+      const msg = result.error.message || '';
+      if (/invalid login|invalid_credentials|密码|password/i.test(msg)) {
+        result = await withTimeout(
+          client.auth.signUp({ email, password }),
+          timeout,
+          '云端连接超时'
+        );
+        if (result.error) {
+          if (/already registered|already exists/i.test(result.error.message || '')) {
+            throw new Error('云端密码不对，请在 Supabase 用户管理重置');
+          }
+          throw result.error;
         }
+        if (!result.data.session) throw new Error('请在 Supabase 关闭邮箱验证后重试');
+      } else {
         throw result.error;
       }
-      if (!result.data.session) throw new Error('请在 Supabase 关闭邮箱验证后重试');
-    } else {
-      throw result.error;
     }
-  }
-  return true;
+    return true;
+  });
 }
 
 async function retryCloudSync(account, password) {
@@ -159,7 +193,9 @@ async function syncRecordsOnLogin() {
   }
   try {
     const local = loadRecordsLocal();
-    const cloud = await withTimeout(fetchCloudRecords(), CLOUD_TIMEOUT_MS, '云端连接超时');
+    const cloud = await withRetry(
+      () => withTimeout(fetchCloudRecords(), getCloudTimeout(), '云端连接超时')
+    );
     if (cloud === null) {
       records = local;
       cloudSyncReady = true;
