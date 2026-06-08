@@ -1450,7 +1450,13 @@ function updateDataStats() {
   const dates = records.map(r => r.date).sort();
   const firstDate = dates[0];
   const lastDate = dates[dates.length - 1];
-  el.innerHTML = `📦 共 <strong>${records.length}</strong> 条记录 ｜ ${firstDate} ~ ${lastDate}`;
+  let html = `📦 共 <strong>${records.length}</strong> 条记录 ｜ ${firstDate} ~ ${lastDate}`;
+  const lastSync = localStorage.getItem('mj_last_github_sync');
+  if (lastSync) {
+    const t = new Date(lastSync);
+    html += ` ｜ 同步 ${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+  }
+  el.innerHTML = html;
 }
 
 // ========== INIT ==========
@@ -1468,6 +1474,15 @@ async function init() {
 }
 
 // init() is called by showMainApp() after login
+
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState !== 'visible') return;
+  if (sessionStorage.getItem('mj_logged_in') !== 'true') return;
+  syncRecordsOnLogin().then(function() {
+    refreshAll();
+    updateDataStats();
+  }).catch(function() {});
+});
 </script>
 
 </div><!-- end mainApp -->

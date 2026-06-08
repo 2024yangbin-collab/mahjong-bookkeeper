@@ -24,6 +24,13 @@ function toBase64Utf8(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
 
+function mergeRecords(localList, remoteList) {
+  const merged = new Map();
+  (remoteList || []).forEach(r => merged.set(r.id, r));
+  (localList || []).forEach(r => merged.set(r.id, r));
+  return Array.from(merged.values());
+}
+
 async function githubApi(url, options) {
   const token = getGithubToken();
   if (!token) throw new Error('请先配置 GitHub Token');
@@ -38,15 +45,35 @@ async function githubApi(url, options) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || ('GitHub 请求失败 ' + res.status));
+    const msg = err.message || ('GitHub 请求失败 ' + res.status);
+    const error = new Error(msg);
+    error.status = res.status;
+    throw error;
   }
   return res.json();
 }
 
+async function fetchGithubRecordsPublic() {
+  const url = 'https://raw.githubusercontent.com/' + GITHUB_SYNC.owner + '/' +
+    GITHUB_SYNC.repo + '/' + GITHUB_SYNC.branch + '/' + GITHUB_SYNC.path + '?t=' + Date.now();
+  const res = await fetch(url, { cache: 'no-store' });
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error('读取云端数据失败 ' + res.status);
+  const json = await res.json();
+  return json.records || [];
+}
+
 async function fetchGithubRecords() {
+  if (!isGithubSyncEnabled()) {
+    try {
+      return await fetchGithubRecordsPublic();
+    } catch (e) {
+      return [];
+    }
+  }
   const base = 'https://api.github.com/repos/' + GITHUB_SYNC.owner + '/' + GITHUB_SYNC.repo + '/contents/' + GITHUB_SYNC.path;
   try {
-    const data = await githubApi(base + '?ref=' + GITHUB_SYNC.branch);
+    const data = await githubApi(base + '?ref=' + GITHUB_SYNC.branch + '&t=' + Date.now());
     const json = JSON.parse(decodeURIComponent(escape(atob(data.content.replace(/\n/g, '')))));
     return json.records || [];
   } catch (e) {
@@ -55,30 +82,65 @@ async function fetchGithubRecords() {
   }
 }
 
-async function uploadGithubRecords(list) {
+async function getGithubFileSha() {
   const base = 'https://api.github.com/repos/' + GITHUB_SYNC.owner + '/' + GITHUB_SYNC.repo + '/contents/' + GITHUB_SYNC.path;
-  let sha = null;
   try {
     const existing = await githubApi(base + '?ref=' + GITHUB_SYNC.branch);
-    sha = existing.sha;
+    return existing.sha;
   } catch (e) {
-    if (!/404|Not Found/i.test(e.message || '')) throw e;
+    if (/404|Not Found/i.test(e.message || '')) return null;
+    throw e;
   }
+}
+
+async function putGithubRecords(list, sha) {
+  const base = 'https://api.github.com/repos/' + GITHUB_SYNC.owner + '/' + GITHUB_SYNC.repo + '/contents/' + GITHUB_SYNC.path;
   const payload = {
     version: 1,
     updatedAt: new Date().toISOString(),
     records: list
   };
+  const body = {
+    message: '麻将馆记账同步 ' + new Date().toLocaleString('zh-CN'),
+    content: toBase64Utf8(JSON.stringify(payload, null, 2)),
+    branch: GITHUB_SYNC.branch
+  };
+  if (sha) body.sha = sha;
   await githubApi(base, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: '麻将馆记账同步 ' + new Date().toLocaleString('zh-CN'),
-      content: toBase64Utf8(JSON.stringify(payload, null, 2)),
-      sha: sha,
-      branch: GITHUB_SYNC.branch
-    })
+    body: JSON.stringify(body)
   });
+}
+
+async function uploadGithubRecords(list) {
+  if (!isGithubSyncEnabled()) throw new Error('请先配置 GitHub Token');
+  let lastError;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const remote = await fetchGithubRecords();
+      const merged = mergeRecords(list, remote);
+      const sha = await getGithubFileSha();
+      await putGithubRecords(merged, sha);
+      localStorage.setItem('mj_last_github_sync', new Date().toISOString());
+      return merged;
+    } catch (e) {
+      lastError = e;
+      if ((e.status === 409 || /sha|409/i.test(e.message || '')) && attempt < 3) {
+        await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastError;
+}
+
+async function pullGithubRecords(localList) {
+  const remote = await fetchGithubRecords();
+  const merged = mergeRecords(localList, remote);
+  localStorage.setItem('mj_last_github_sync', new Date().toISOString());
+  return merged;
 }
 
 async function testGithubConnection() {

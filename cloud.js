@@ -187,27 +187,34 @@ async function cloudSignOut() {
 
 async function syncRecordsOnLogin() {
   const local = loadRecordsLocal();
-  if (isGithubSyncEnabled()) {
-    try {
-      updateCloudStatus('syncing');
-      const cloud = await withRetry(
-        () => withTimeout(fetchGithubRecords(), getCloudTimeout(), 'GitHub 连接超时')
+  try {
+    updateCloudStatus('syncing');
+    let merged = await withRetry(
+      () => withTimeout(pullGithubRecords(local), getCloudTimeout(), 'GitHub 连接超时')
+    );
+    records = merged;
+    saveRecordsLocal(records);
+    if (isGithubSyncEnabled()) {
+      merged = await withRetry(
+        () => withTimeout(uploadGithubRecords(records), getCloudTimeout(), 'GitHub 上传超时')
       );
-      const merged = new Map();
-      local.forEach(r => merged.set(r.id, r));
-      (cloud || []).forEach(r => merged.set(r.id, r));
-      records = Array.from(merged.values());
+      records = merged;
       saveRecordsLocal(records);
-      await uploadGithubRecords(records);
       cloudSyncReady = true;
       updateCloudStatus('synced');
-    } catch (e) {
-      console.error('GitHub 同步失败:', e);
+    } else {
+      cloudSyncReady = true;
+      updateCloudStatus('error', '请配置 GitHub Token 以上传');
+    }
+    return;
+  } catch (e) {
+    console.error('GitHub 同步失败:', e);
+    if (isGithubSyncEnabled()) {
       records = local;
       cloudSyncReady = true;
       updateCloudStatus('error', formatCloudError(e));
+      return;
     }
-    return;
   }
   if (!isCloudEnabled()) {
     records = local;
@@ -252,8 +259,11 @@ async function persistRecords(options = {}) {
   if (!cloudSyncReady) return;
   if (isGithubSyncEnabled()) {
     try {
-      await uploadGithubRecords(records);
+      const merged = await uploadGithubRecords(records);
+      records = merged;
+      saveRecordsLocal(records);
       updateCloudStatus('synced');
+      if (typeof refreshAll === 'function') refreshAll();
     } catch (e) {
       console.error('GitHub 保存失败:', e);
       updateCloudStatus('error', formatCloudError(e));
