@@ -563,6 +563,7 @@ body {
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="github-sync.js"></script>
 <script src="cloud.js"></script>
 </head>
 <body>
@@ -674,6 +675,15 @@ body {
 
   <!-- Backup Tools -->
   <div class="section-title">🔧 数据管理</div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;">
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📱 手机同步（推荐）</div>
+    <div style="font-size:11px;color:#666;line-height:1.5;margin-bottom:8px;">国内手机连不上 Supabase，用 GitHub 同步更稳定。电脑和手机各粘贴一次 Token 即可。</div>
+    <input type="password" id="githubToken" placeholder="粘贴 GitHub Token（ghp_...）" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:8px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-outline" style="flex:1;min-width:120px;" onclick="saveGithubTokenAndSync()">保存并同步</button>
+      <a href="https://github.com/settings/tokens/new?scopes=repo&description=mahjong-bookkeeper" target="_blank" class="btn btn-outline" style="flex:1;min-width:120px;text-decoration:none;text-align:center;">创建 Token</a>
+    </div>
+  </div>
   <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
     <button class="btn btn-outline" style="flex:1;min-width:140px;" onclick="promptCloudReconnect()">☁️ 重新同步云端</button>
     <button class="btn btn-outline" style="flex:1;min-width:140px;" onclick="cloudSignOut()">🚪 退出登录</button>
@@ -1384,6 +1394,9 @@ function updateDataStats() {
 async function init() {
   updateMonthLabel();
   updateCloudStatus('syncing');
+  if (isGithubSyncEnabled()) {
+    document.getElementById('githubToken').value = '********';
+  }
   await syncRecordsOnLogin();
   updateDashboard();
   updateDataStats();
@@ -1493,21 +1506,44 @@ async function doLogin() {
   sessionStorage.setItem(SESSION_KEY, 'true');
   errorEl.textContent = '正在上传云端...';
   try {
-    await syncCloudAuth(account, password);
+    if (!isGithubSyncEnabled()) {
+      await syncCloudAuth(account, password);
+    }
     errorEl.textContent = '';
     await showMainApp();
-    showToast(isFirst ? '☁️ 账号已创建，云端已连接' : '☁️ 登录成功，云端已同步');
+    showToast(isGithubSyncEnabled()
+      ? '☁️ 登录成功，GitHub 同步已开启'
+      : (isFirst ? '☁️ 账号已创建，云端已连接' : '☁️ 登录成功，云端已同步'));
   } catch (e) {
     errorEl.textContent = '云端：' + formatCloudError(e);
     await showMainApp();
     showToast(isMobileDevice()
-      ? '⚠️ 手机流量可能连不上云端，请换 WiFi 后点「重新同步云端」'
+      ? '⚠️ 手机请配置 GitHub Token 实现同步（见数据管理）'
       : '⚠️ 本地可用，请点「重新同步云端」重试');
+  }
+}
+
+async function saveGithubTokenAndSync() {
+  const token = document.getElementById('githubToken').value.trim();
+  if (!token) { showToast('请先粘贴 GitHub Token'); return; }
+  saveGithubToken(token);
+  try {
+    await testGithubConnection();
+    await syncRecordsOnLogin();
+    updateDashboard();
+    showToast('☁️ GitHub 同步成功');
+  } catch (e) {
+    localStorage.removeItem('mj_github_token');
+    showToast('❌ ' + formatCloudError(e));
   }
 }
 
 async function promptCloudReconnect() {
   try {
+    if (isGithubSyncEnabled()) {
+      await retryCloudSync();
+      return;
+    }
     if (await hasCloudSession()) {
       await retryCloudSync();
       return;

@@ -41,6 +41,7 @@ async function withRetry(fn, attempts) {
 
 function formatCloudError(e) {
   const msg = (e && (e.message || e.error_description || String(e))) || '未知错误';
+  if (/Bad credentials|401|Unauthorized/i.test(msg)) return 'GitHub Token 无效，请重新创建';
   if (isNetworkError(e)) {
     return isMobileDevice()
       ? '手机网络无法访问云端，请换 WiFi 后重试'
@@ -185,14 +186,36 @@ async function cloudSignOut() {
 }
 
 async function syncRecordsOnLogin() {
+  const local = loadRecordsLocal();
+  if (isGithubSyncEnabled()) {
+    try {
+      updateCloudStatus('syncing');
+      const cloud = await withRetry(
+        () => withTimeout(fetchGithubRecords(), getCloudTimeout(), 'GitHub 连接超时')
+      );
+      const merged = new Map();
+      local.forEach(r => merged.set(r.id, r));
+      (cloud || []).forEach(r => merged.set(r.id, r));
+      records = Array.from(merged.values());
+      saveRecordsLocal(records);
+      await uploadGithubRecords(records);
+      cloudSyncReady = true;
+      updateCloudStatus('synced');
+    } catch (e) {
+      console.error('GitHub 同步失败:', e);
+      records = local;
+      cloudSyncReady = true;
+      updateCloudStatus('error', formatCloudError(e));
+    }
+    return;
+  }
   if (!isCloudEnabled()) {
-    records = loadRecordsLocal();
+    records = local;
     cloudSyncReady = true;
     updateCloudStatus('local');
     return;
   }
   try {
-    const local = loadRecordsLocal();
     const cloud = await withRetry(
       () => withTimeout(fetchCloudRecords(), getCloudTimeout(), '云端连接超时')
     );
@@ -226,7 +249,18 @@ async function syncRecordsOnLogin() {
 
 async function persistRecords(options = {}) {
   saveRecordsLocal(records);
-  if (!isCloudEnabled() || !cloudSyncReady) return;
+  if (!cloudSyncReady) return;
+  if (isGithubSyncEnabled()) {
+    try {
+      await uploadGithubRecords(records);
+      updateCloudStatus('synced');
+    } catch (e) {
+      console.error('GitHub 保存失败:', e);
+      updateCloudStatus('error', formatCloudError(e));
+    }
+    return;
+  }
+  if (!isCloudEnabled()) return;
   try {
     if (options.deletedId) {
       await deleteCloudRecord(options.deletedId);
@@ -265,13 +299,13 @@ async function testCloudConnection() {
 function updateCloudStatus(state, detail) {
   const el = document.getElementById('cloudStatus');
   if (!el) return;
-  if (!isCloudEnabled()) {
+  if (!isCloudEnabled() && !isGithubSyncEnabled()) {
     el.textContent = '💾 仅本地模式';
     el.style.color = '#999';
     return;
   }
   if (state === 'synced') {
-    el.textContent = '☁️ 云端已同步';
+    el.textContent = isGithubSyncEnabled() ? '☁️ GitHub 已同步' : '☁️ 云端已同步';
     el.style.color = '#2e7d32';
   } else if (state === 'syncing') {
     el.textContent = '⏳ 同步中...';
