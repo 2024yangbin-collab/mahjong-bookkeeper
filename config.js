@@ -1,4 +1,6 @@
-﻿// Supabase 云端配置
+﻿// Supabase 云端配置（默认开启云端同步）
+localStorage.setItem('mj_cloud_enabled', 'true');
+
 const SUPABASE_CONFIG = {
   url: 'https://isgistikhqqvuvjqooazw.supabase.co',
   get anonKey() {

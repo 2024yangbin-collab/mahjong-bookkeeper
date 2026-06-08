@@ -3,7 +3,7 @@
  */
 let supabaseClient = null;
 let cloudSyncReady = false;
-const CLOUD_TIMEOUT_MS = 12000;
+const CLOUD_TIMEOUT_MS = 20000;
 
 function withTimeout(promise, ms, message) {
   return Promise.race([
@@ -19,8 +19,14 @@ function formatCloudError(e) {
 }
 
 function isCloudEnabled() {
-  return localStorage.getItem('mj_cloud_enabled') === 'true'
-    && !!(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
+  return !!(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
+}
+
+async function hasCloudSession() {
+  const client = getSupabaseClient();
+  if (!client) return false;
+  const { data: { session } } = await client.auth.getSession();
+  return !!session;
 }
 
 function getSupabaseClient() {
@@ -99,9 +105,9 @@ async function deleteCloudRecord(clientId) {
 }
 
 async function syncCloudAuth(account, password) {
-  if (!isCloudEnabled()) return false;
+  if (!isCloudEnabled()) throw new Error('云端未配置');
   const client = getSupabaseClient();
-  if (!client) return false;
+  if (!client) throw new Error('云端未配置');
   const email = accountToEmail(account);
   let result = await withTimeout(
     client.auth.signInWithPassword({ email, password }),
@@ -109,15 +115,33 @@ async function syncCloudAuth(account, password) {
     '云端连接超时'
   );
   if (result.error) {
-    result = await withTimeout(
-      client.auth.signUp({ email, password }),
-      CLOUD_TIMEOUT_MS,
-      '云端连接超时'
-    );
-    if (result.error) throw result.error;
-    if (!result.data.session) throw new Error('请在 Supabase 关闭邮箱验证');
+    const msg = result.error.message || '';
+    if (/invalid login|invalid_credentials|密码|password/i.test(msg)) {
+      result = await withTimeout(
+        client.auth.signUp({ email, password }),
+        CLOUD_TIMEOUT_MS,
+        '云端连接超时'
+      );
+      if (result.error) {
+        if (/already registered|already exists/i.test(result.error.message || '')) {
+          throw new Error('云端账号已存在，密码不一致，请在 Supabase 重置密码');
+        }
+        throw result.error;
+      }
+      if (!result.data.session) throw new Error('请在 Supabase 关闭邮箱验证后重试');
+    } else {
+      throw result.error;
+    }
   }
   return true;
+}
+
+async function retryCloudSync(account, password) {
+  updateCloudStatus('syncing');
+  await syncCloudAuth(account, password);
+  await syncRecordsOnLogin();
+  updateCloudStatus('synced');
+  showToast('☁️ 云端已重新连接');
 }
 
 async function syncRecordsOnLogin() {
@@ -133,6 +157,8 @@ async function syncRecordsOnLogin() {
     if (cloud === null) {
       records = local;
       cloudSyncReady = true;
+      const hasSession = await hasCloudSession().catch(() => false);
+      updateCloudStatus(hasSession ? 'synced' : 'error', hasSession ? '' : '未登录云端');
       return;
     }
     const merged = new Map();
@@ -147,7 +173,12 @@ async function syncRecordsOnLogin() {
     console.error('云端同步失败:', e);
     records = loadRecordsLocal();
     cloudSyncReady = true;
-    updateCloudStatus('local', formatCloudError(e));
+    const hasSession = await hasCloudSession().catch(() => false);
+    if (hasSession) {
+      updateCloudStatus('error', formatCloudError(e));
+    } else {
+      updateCloudStatus('error', '未登录云端，请重新连接');
+    }
   }
 }
 
@@ -172,13 +203,12 @@ async function persistRecords(options = {}) {
     updateCloudStatus('synced');
   } catch (e) {
     console.error('云端保存失败:', e);
-    updateCloudStatus('local', formatCloudError(e));
+    updateCloudStatus('error', formatCloudError(e));
   }
 }
 
 function saveAnonKey(key) {
   localStorage.setItem('mj_supabase_anon_key', key.trim());
-  localStorage.setItem('mj_cloud_enabled', 'true');
   supabaseClient = null;
 }
 

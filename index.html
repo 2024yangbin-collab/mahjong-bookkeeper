@@ -554,7 +554,7 @@ body {
   .page { display: block !important; }
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="cloud.js"></script>
 </head>
@@ -580,6 +580,12 @@ body {
     <p style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;">打开 API 页面，复制 <strong>anon public</strong> 密钥粘贴到下面。</p>
     <a href="https://supabase.com/dashboard/project/isgistikhqqvuvjqooazw/settings/api" target="_blank" style="display:block;text-align:center;padding:10px;background:#f5f0e8;color:#8b4513;border-radius:8px;text-decoration:none;font-size:13px;margin-bottom:10px;">打开 API 密钥页面</a>
     <textarea id="setupAnonKey" placeholder="粘贴 publishable key（sb_publishable_...）" style="width:100%;height:80px;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:12px;resize:vertical;"></textarea>
+  </div>
+
+  <div style="width:100%;max-width:340px;background:#fff;border:1px solid #e0d5c7;border-radius:12px;padding:16px;margin-bottom:12px;">
+    <div style="font-weight:600;margin-bottom:8px;">步骤 3：关闭邮箱验证</div>
+    <p style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;">在 Supabase 认证设置中，关闭 <strong>Confirm email</strong>，否则无法直接登录。</p>
+    <a href="https://supabase.com/dashboard/project/isgistikhqqvuvjqooazw/auth/providers" target="_blank" style="display:block;text-align:center;padding:10px;background:#f5f0e8;color:#8b4513;border-radius:8px;text-decoration:none;font-size:13px;">打开认证设置</a>
   </div>
 
   <div id="setupError" style="color:#c62828;font-size:13px;min-height:20px;margin-bottom:8px;max-width:340px;text-align:center;"></div>
@@ -611,7 +617,7 @@ body {
 <!-- Header -->
 <div class="header">
   <h1><span class="mahjong-icon">🀄</span>麻将馆记账本</h1>
-  <div id="cloudStatus" style="font-size:12px;margin-top:6px;opacity:0.95;">☁️ 检测中...</div>
+  <div id="cloudStatus" style="font-size:12px;margin-top:6px;opacity:0.95;cursor:pointer;" onclick="promptCloudReconnect()" title="点击重新连接云端">☁️ 检测中...</div>
 </div>
 
 <!-- Month Bar -->
@@ -663,6 +669,10 @@ body {
 
   <!-- Backup Tools -->
   <div class="section-title">🔧 数据管理</div>
+  <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+    <button class="btn btn-outline" style="flex:1;min-width:140px;" onclick="promptCloudReconnect()">☁️ 重新连接云端</button>
+    <button class="btn btn-outline" style="flex:1;min-width:140px;" onclick="showSetupScreen()">⚙️ 云端配置</button>
+  </div>
   <div class="backup-row">
     <button class="btn btn-outline" onclick="exportData()">
       <span>📤</span> 导出备份
@@ -1406,7 +1416,7 @@ function hideAllScreens() {
 function showSetupScreen() {
   hideAllScreens();
   document.getElementById('setupScreen').style.display = 'flex';
-  const savedKey = localStorage.getItem('mj_supabase_anon_key') || '';
+  const savedKey = localStorage.getItem('mj_supabase_anon_key') || SUPABASE_CONFIG.anonKey || '';
   if (savedKey) document.getElementById('setupAnonKey').value = savedKey;
 }
 
@@ -1422,9 +1432,7 @@ function showLoginScreen() {
     accountEl.readOnly = false;
     forgotBtn.style.display = 'none';
   } else {
-    document.getElementById('loginSubtitle').textContent = isCloudEnabled()
-      ? '本地登录，联网后自动云端同步'
-      : '请输入密码登录';
+    document.getElementById('loginSubtitle').textContent = '登录后自动云端同步数据';
     accountEl.value = auth.account;
     accountEl.readOnly = true;
     forgotBtn.style.display = 'block';
@@ -1451,7 +1459,7 @@ async function completeSetup() {
   catch (e) { errorEl.textContent = '连接失败：' + (e.message || '请确认已运行 SQL 脚本'); }
 }
 
-function doLogin() {
+async function doLogin() {
   const account = document.getElementById('loginAccount').value.trim();
   const password = document.getElementById('loginPassword').value;
   const errorEl = document.getElementById('loginError');
@@ -1461,28 +1469,45 @@ function doLogin() {
   if (password.length < 5) { errorEl.textContent = '密码至少 5 位'; return; }
 
   const auth = getAuthData();
-  if (!auth) {
+  const isFirst = !auth;
+
+  if (!isFirst && (account !== auth.account || hashPassword(password) !== auth.password)) {
+    errorEl.textContent = '账号或密码错误';
+    resetHint.style.display = 'block';
+    return;
+  }
+
+  if (isFirst) {
     saveAuthData({ account, password: hashPassword(password) });
-    sessionStorage.setItem(SESSION_KEY, 'true');
-    errorEl.textContent = '';
-    resetHint.style.display = 'none';
-    showMainApp();
-    syncCloudAuth(account, password).catch(() => {});
-    showToast('账号密码已设置');
-    return;
   }
 
-  if (account === auth.account && hashPassword(password) === auth.password) {
-    sessionStorage.setItem(SESSION_KEY, 'true');
-    errorEl.textContent = '';
-    resetHint.style.display = 'none';
-    showMainApp();
-    syncCloudAuth(account, password).catch(() => {});
-    return;
-  }
+  sessionStorage.setItem(SESSION_KEY, 'true');
+  resetHint.style.display = 'none';
+  errorEl.textContent = '正在连接云端...';
 
-  errorEl.textContent = '账号或密码错误';
-  resetHint.style.display = 'block';
+  try {
+    await syncCloudAuth(account, password);
+    errorEl.textContent = '';
+    await showMainApp();
+    showToast(isFirst ? '☁️ 账号已创建，云端已连接' : '☁️ 登录成功，云端已同步');
+  } catch (e) {
+    errorEl.textContent = '云端：' + formatCloudError(e);
+    await showMainApp();
+    showToast('⚠️ 已进入本地模式，请完成云端配置后点「重新连接云端」');
+  }
+}
+
+async function promptCloudReconnect() {
+  const auth = getAuthData();
+  if (!auth) { showSetupScreen(); return; }
+  const password = prompt('请输入密码以重新连接云端：');
+  if (!password) return;
+  try {
+    await retryCloudSync(auth.account, password);
+  } catch (e) {
+    showToast('❌ ' + formatCloudError(e));
+    updateCloudStatus('error', formatCloudError(e));
+  }
 }
 
 async function showMainApp() {
@@ -1499,10 +1524,14 @@ document.addEventListener('keydown', function(e) {
   else if (document.getElementById('loginScreen').style.display === 'flex') doLogin();
 });
 
-(function bootstrap() {
+(async function bootstrap() {
   document.getElementById('resetHint').innerHTML = '忘记密码？请清除本网站浏览器数据后刷新，重新设置密码。';
+  if (!isCloudEnabled()) {
+    showSetupScreen();
+    return;
+  }
   if (isLoggedIn()) {
-    showMainApp();
+    await showMainApp();
     return;
   }
   showLoginScreen();
