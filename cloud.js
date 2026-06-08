@@ -12,8 +12,15 @@ function withTimeout(promise, ms, message) {
   ]);
 }
 
+function formatCloudError(e) {
+  const msg = (e && (e.message || e.error_description || String(e))) || '未知错误';
+  if (/fetch|network|timeout|超时|获取失败|Failed/i.test(msg)) return '网络不通';
+  return msg;
+}
+
 function isCloudEnabled() {
-  return !!(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
+  return localStorage.getItem('mj_cloud_enabled') === 'true'
+    && !!(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
 }
 
 function getSupabaseClient() {
@@ -117,6 +124,7 @@ async function syncRecordsOnLogin() {
   if (!isCloudEnabled()) {
     records = loadRecordsLocal();
     cloudSyncReady = true;
+    updateCloudStatus('local');
     return;
   }
   try {
@@ -139,8 +147,7 @@ async function syncRecordsOnLogin() {
     console.error('云端同步失败:', e);
     records = loadRecordsLocal();
     cloudSyncReady = true;
-    updateCloudStatus('error', e.message || '同步失败');
-    showToast('⚠️ 云端同步失败，已使用本地数据');
+    updateCloudStatus('local', formatCloudError(e));
   }
 }
 
@@ -165,13 +172,13 @@ async function persistRecords(options = {}) {
     updateCloudStatus('synced');
   } catch (e) {
     console.error('云端保存失败:', e);
-    updateCloudStatus('error', e.message || '保存失败');
-    showToast('⚠️ 已保存到本地，云端上传失败');
+    updateCloudStatus('local', formatCloudError(e));
   }
 }
 
 function saveAnonKey(key) {
   localStorage.setItem('mj_supabase_anon_key', key.trim());
+  localStorage.setItem('mj_cloud_enabled', 'true');
   supabaseClient = null;
 }
 
@@ -196,6 +203,9 @@ function updateCloudStatus(state, detail) {
     el.style.color = '#2e7d32';
   } else if (state === 'syncing') {
     el.textContent = '⏳ 同步中...';
+    el.style.color = '#666';
+  } else if (state === 'local') {
+    el.textContent = detail ? '💾 本地模式（' + detail + '）' : '💾 本地模式';
     el.style.color = '#666';
   } else {
     el.textContent = '⚠️ 云端异常' + (detail ? '：' + detail : '');
