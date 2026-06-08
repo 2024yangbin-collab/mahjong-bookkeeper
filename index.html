@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -554,9 +554,37 @@ body {
   .page { display: block !important; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="cloud.js"></script>
 </head>
 <body>
+<div class="toast" id="toast"></div>
+<!-- ===== Setup Screen ===== -->
+<div id="setupScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:20px;">
+  <div style="font-size:64px;margin-bottom:16px;">☁️</div>
+  <h2 style="margin-bottom:8px;">首次云端配置（只需一次）</h2>
+  <p style="color:#666;font-size:13px;margin-bottom:20px;text-align:center;max-width:340px;line-height:1.6;">配置完成后，任意浏览器登录同一账号，数据会自动同步。</p>
 
+  <div style="width:100%;max-width:340px;background:#fff;border:1px solid #e0d5c7;border-radius:12px;padding:16px;margin-bottom:12px;">
+    <div style="font-weight:600;margin-bottom:8px;">步骤 1：创建数据库表</div>
+    <p style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;">点击下方按钮打开 SQL 编辑器，粘贴脚本后点 Run。</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="https://supabase.com/dashboard/project/isgistikhqqvuvjqooazw/sql/new" target="_blank" style="flex:1;text-align:center;padding:10px;background:#8b4513;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;">打开 SQL 编辑器</a>
+      <button type="button" onclick="copySetupSql()" style="flex:1;padding:10px;background:#fff;border:1px solid #8b4513;color:#8b4513;border-radius:8px;font-size:13px;cursor:pointer;">复制 SQL 脚本</button>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:340px;background:#fff;border:1px solid #e0d5c7;border-radius:12px;padding:16px;margin-bottom:12px;">
+    <div style="font-weight:600;margin-bottom:8px;">步骤 2：粘贴 API 密钥</div>
+    <p style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;">打开 API 页面，复制 <strong>anon public</strong> 密钥粘贴到下面。</p>
+    <a href="https://supabase.com/dashboard/project/isgistikhqqvuvjqooazw/settings/api" target="_blank" style="display:block;text-align:center;padding:10px;background:#f5f0e8;color:#8b4513;border-radius:8px;text-decoration:none;font-size:13px;margin-bottom:10px;">打开 API 密钥页面</a>
+    <textarea id="setupAnonKey" placeholder="粘贴 publishable key（sb_publishable_...）" style="width:100%;height:80px;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:12px;resize:vertical;"></textarea>
+  </div>
+
+  <div id="setupError" style="color:#c62828;font-size:13px;min-height:20px;margin-bottom:8px;max-width:340px;text-align:center;"></div>
+  <button type="button" onclick="completeSetup()" style="width:100%;max-width:340px;padding:14px;background:linear-gradient(135deg,#5d2e0c,#8b4513);color:#fff;border:none;border-radius:10px;font-size:17px;font-weight:600;cursor:pointer;">保存并进入登录</button>
+</div>
 <!-- ===== Login Screen ===== -->
 <div id="loginScreen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:20px;">
   <div style="font-size:64px;margin-bottom:16px;">🀄</div>
@@ -583,6 +611,7 @@ body {
 <!-- Header -->
 <div class="header">
   <h1><span class="mahjong-icon">🀄</span>麻将馆记账本</h1>
+  <div id="cloudStatus" style="font-size:12px;margin-top:6px;opacity:0.95;">☁️ 检测中...</div>
 </div>
 
 <!-- Month Bar -->
@@ -593,8 +622,6 @@ body {
 </div>
 
 <!-- Toast -->
-<div class="toast" id="toast"></div>
-
 <!-- ===== Page: Dashboard ===== -->
 <div class="page active" id="page-dashboard">
   <div class="section-title">📅 今日概况</div>
@@ -731,7 +758,7 @@ const STORAGE_KEY = 'mj_accounting_records';
 const BACKUP_DATE_KEY = 'mj_last_backup_date';
 const AUTO_BACKUP_KEY = 'mj_auto_backup_enabled';
 
-function loadRecords() {
+function loadRecordsLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -740,7 +767,7 @@ function loadRecords() {
   }
 }
 
-function saveRecords(records) {
+function saveRecordsLocal(records) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 }
 
@@ -852,7 +879,7 @@ function updateBackupStatus() {
 }
 
 // ========== STATE ==========
-let records = loadRecords();
+let records = [];
 let currentMonth = new Date().getMonth() + 1;
 let currentYear = new Date().getFullYear();
 let currentModalType = 'income';
@@ -1219,7 +1246,7 @@ function saveRecord() {
   };
 
   records.push(record);
-  saveRecords(records);
+  persistRecords({ record: record });
   document.getElementById('modalOverlay').classList.remove('show');
 
   // Sync month to the record's date
@@ -1235,7 +1262,7 @@ function saveRecord() {
 function deleteRecord(id) {
   if (!confirm('确定要删除这条记录吗？')) return;
   records = records.filter(r => r.id !== id);
-  saveRecords(records);
+  persistRecords({ deletedId: id });
   refreshAll();
   showToast('已删除');
 }
@@ -1298,7 +1325,7 @@ function importData(event) {
       const merged = records.filter(r => !imported.records.some(ir => ir.id === r.id));
       const newRecords = imported.records.filter(r => !existingIds.has(r.id));
       records = [...merged, ...imported.records];
-      saveRecords(records);
+      persistRecords();
 
       refreshAll();
       updateDataStats();
@@ -1326,12 +1353,13 @@ function updateDataStats() {
 }
 
 // ========== INIT ==========
-function init() {
+async function init() {
   updateMonthLabel();
+  updateCloudStatus('syncing');
+  await syncRecordsOnLogin();
   updateDashboard();
   updateDataStats();
   updateBackupStatus();
-  // 每次打开页面检查是否需要自动备份（>24h自动执行）
   setTimeout(() => { autoBackup(false); }, 1500);
 }
 
@@ -1342,128 +1370,111 @@ function init() {
 
 <!-- ===== LOGIN SYSTEM ===== -->
 <script>
-// ========== AUTH ==========
-const AUTH_KEY = 'mj_auth_credentials';
 const SESSION_KEY = 'mj_logged_in';
 const DEFAULT_ACCOUNT = 'admin';
 
-function getAuthData() {
+
+function isLoggedIn() { return sessionStorage.getItem(SESSION_KEY) === 'true'; }
+
+function hideAllScreens() {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+function showSetupScreen() {
+  hideAllScreens();
+  document.getElementById('setupScreen').style.display = 'flex';
+  const savedKey = localStorage.getItem('mj_supabase_anon_key') || '';
+  if (savedKey) document.getElementById('setupAnonKey').value = savedKey;
+}
+
+function showLoginScreen() {
+  hideAllScreens();
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginAccount').value = DEFAULT_ACCOUNT;
+  document.getElementById('loginSubtitle').textContent = isCloudEnabled() ? '登录后数据会自动云端同步' : '请输入密码登录';
+  document.getElementById('loginPassword').focus();
+}
+
+async function copySetupSql() {
   try {
-    const raw = localStorage.getItem(AUTH_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch(e) { return null; }
+    const text = SETUP_SQL || '';
+    await navigator.clipboard.writeText(text);
+    showToast('SQL 脚本已复制');
+  } catch (e) { showToast('复制失败，请手动打开 setup.sql'); }
 }
 
-function saveAuthData(data) {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+async function completeSetup() {
+  const errorEl = document.getElementById('setupError');
+  const key = document.getElementById('setupAnonKey').value.trim();
+  errorEl.textContent = '';
+  if (!key) { errorEl.textContent = '请先粘贴 anon public key'; return; }
+  if (!/^eyJ|^sb_publishable_/.test(key)) { errorEl.textContent = '密钥格式不对，请复制 publishable 或 anon key'; return; }
+  saveAnonKey(key);
+  try { await testCloudConnection(); showToast('云端连接成功'); showLoginScreen(); }
+  catch (e) { errorEl.textContent = '连接失败：' + (e.message || '请确认已运行 SQL 脚本'); }
 }
 
-function hashPassword(pwd) {
-  // Simple hash for client-side (prevents plaintext storage)
-  let hash = 0;
-  for (let i = 0; i < pwd.length; i++) {
-    const char = pwd.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return 'mj_' + Math.abs(hash).toString(36);
-}
-
-function isLoggedIn() {
-  return sessionStorage.getItem(SESSION_KEY) === 'true';
-}
-
-function checkFirstRun() {
-  const auth = getAuthData();
-  if (!auth) {
-    // 首次使用 - 显示设置密码
-    document.getElementById('loginSubtitle').textContent = '首次使用，请设置账号和密码';
-    document.getElementById('loginAccount').value = DEFAULT_ACCOUNT;
-    document.getElementById('loginAccount').readOnly = false;
-    document.getElementById('forgotPwdBtn').style.display = 'none';
-    return true;
-  }
-  return false;
-}
-
-function doLogin() {
+async function doLogin() {
   const account = document.getElementById('loginAccount').value.trim();
   const password = document.getElementById('loginPassword').value;
   const errorEl = document.getElementById('loginError');
-
   if (!account) { errorEl.textContent = '请输入账号'; return; }
   if (!password) { errorEl.textContent = '请输入密码'; return; }
-
-  const auth = getAuthData();
-  const isFirst = !auth;
-
-  if (isFirst) {
-    // 首次设置
-    saveAuthData({
-      account: account,
-      password: hashPassword(password)
-    });
-    sessionStorage.setItem(SESSION_KEY, 'true');
-    showMainApp();
-    showToast('🔒 账号密码已设置');
-    return;
+  if (password.length < 6) { errorEl.textContent = '密码至少 6 位'; return; }
+  if (!isCloudEnabled()) { errorEl.textContent = '请先完成云端配置'; showSetupScreen(); return; }
+  const client = getSupabaseClient();
+  const email = accountToEmail(account);
+  errorEl.textContent = '登录中...';
+  let result = await client.auth.signInWithPassword({ email, password });
+  if (result.error) {
+    result = await client.auth.signUp({ email, password });
+    if (result.error) {
+      errorEl.textContent = result.error.message.includes('already registered') ? '账号或密码错误' : (result.error.message || '登录失败');
+      document.getElementById('resetHint').style.display = 'block';
+      return;
+    }
+    if (!result.data.session) { errorEl.textContent = '请在 Supabase 关闭邮箱验证后重试'; return; }
+    showToast('账号已创建，欢迎使用');
   }
-
-  // 验证
-  if (account === auth.account && hashPassword(password) === auth.password) {
-    sessionStorage.setItem(SESSION_KEY, 'true');
-    errorEl.textContent = '';
-    showMainApp();
-  } else {
-    errorEl.textContent = '账号或密码错误';
-    document.getElementById('resetHint').style.display = 'block';
-    document.getElementById('forgotPwdBtn').style.display = 'block';
-  }
+  sessionStorage.setItem(SESSION_KEY, 'true');
+  errorEl.textContent = '';
+  await showMainApp();
 }
 
-function showMainApp() {
-  document.getElementById('loginScreen').style.display = 'none';
+async function showMainApp() {
+  hideAllScreens();
   document.getElementById('mainApp').style.display = 'block';
-  init();
+  await init();
 }
 
-function resetPassword() {
-  document.getElementById('resetHint').style.display = 'block';
-}
+function resetPassword() { document.getElementById('resetHint').style.display = 'block'; }
 
-// 键盘回车登录
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
-    doLogin();
-  }
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('setupScreen').style.display === 'flex') completeSetup();
+  else if (document.getElementById('loginScreen').style.display === 'flex') doLogin();
 });
 
-// ========== INIT ==========
-(function() {
-  const isFirst = checkFirstRun();
-  if (isFirst) {
-    document.getElementById('loginSubtitle').textContent = '首次使用，请设置账号和密码';
-    document.getElementById('forgotPwdBtn').style.display = 'none';
-  }
-
-  // 检查是否已登录
+(async function bootstrap() {
+  document.getElementById('resetHint').innerHTML = '忘记密码？请在 Supabase 控制台 Authentication → Users 中重置。';
+  if (!isCloudEnabled()) { showSetupScreen(); return; }
   if (isLoggedIn()) {
-    showMainApp();
-  } else {
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('mainApp').style.display = 'none';
-    // 默认填入admin账号
-    const auth = getAuthData();
-    if (auth) {
-      document.getElementById('loginAccount').value = auth.account;
-      document.getElementById('loginAccount').readOnly = true;
-    } else {
-      document.getElementById('loginAccount').value = DEFAULT_ACCOUNT;
-    }
-    document.getElementById('loginPassword').focus();
+    const client = getSupabaseClient();
+    const { data: { session } } = await client.auth.getSession();
+    if (session) { await showMainApp(); return; }
+    sessionStorage.removeItem(SESSION_KEY);
   }
+  showLoginScreen();
 })();
 </script>
 
 </body>
 </html>
+
+
+
+
+
+

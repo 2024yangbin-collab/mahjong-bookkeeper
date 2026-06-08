@@ -1,0 +1,174 @@
+﻿/**
+ * 麻将馆记账本 - Supabase 云端同步
+ */
+let supabaseClient = null;
+let cloudSyncReady = false;
+
+function isCloudEnabled() {
+  return !!(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
+}
+
+function getSupabaseClient() {
+  if (!isCloudEnabled()) return null;
+  if (!supabaseClient) {
+    supabaseClient = window.supabase.createClient(
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.anonKey
+    );
+  }
+  return supabaseClient;
+}
+
+function accountToEmail(account) {
+  return account.trim().toLowerCase() + '@mahjong-bookkeeper.app';
+}
+
+function fromCloudRecord(row) {
+  return {
+    id: row.client_id,
+    date: row.date,
+    type: row.type,
+    category: row.category,
+    amount: parseFloat(row.amount),
+    note: row.note || '',
+    createdAt: row.created_at || new Date().toISOString()
+  };
+}
+
+function toCloudRecord(record, userId) {
+  return {
+    client_id: record.id,
+    user_id: userId,
+    date: record.date,
+    type: record.type,
+    category: record.category,
+    amount: record.amount,
+    note: record.note || '',
+    created_at: record.createdAt || new Date().toISOString()
+  };
+}
+
+async function fetchCloudRecords() {
+  const client = getSupabaseClient();
+  if (!client) return null;
+  const { data: { user } } = await client.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await client
+    .from('records')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(fromCloudRecord);
+}
+
+async function uploadRecordsToCloud(list) {
+  const client = getSupabaseClient();
+  if (!client || !list.length) return;
+  const { data: { user } } = await client.auth.getUser();
+  if (!user) return;
+  const rows = list.map(r => toCloudRecord(r, user.id));
+  const { error } = await client
+    .from('records')
+    .upsert(rows, { onConflict: 'user_id,client_id' });
+  if (error) throw error;
+}
+
+async function deleteCloudRecord(clientId) {
+  const client = getSupabaseClient();
+  if (!client) return;
+  const { error } = await client
+    .from('records')
+    .delete()
+    .eq('client_id', clientId);
+  if (error) throw error;
+}
+
+async function syncRecordsOnLogin() {
+  if (!isCloudEnabled()) {
+    records = loadRecordsLocal();
+    cloudSyncReady = true;
+    return;
+  }
+  try {
+    const local = loadRecordsLocal();
+    const cloud = await fetchCloudRecords();
+    if (cloud === null) {
+      records = local;
+      cloudSyncReady = true;
+      return;
+    }
+    const merged = new Map();
+    local.forEach(r => merged.set(r.id, r));
+    cloud.forEach(r => merged.set(r.id, r));
+    records = Array.from(merged.values());
+    saveRecordsLocal(records);
+    await uploadRecordsToCloud(records);
+    cloudSyncReady = true;
+    updateCloudStatus('synced');
+  } catch (e) {
+    console.error('云端同步失败:', e);
+    records = loadRecordsLocal();
+    cloudSyncReady = true;
+    updateCloudStatus('error', e.message || '同步失败');
+    showToast('⚠️ 云端同步失败，已使用本地数据');
+  }
+}
+
+async function persistRecords(options = {}) {
+  saveRecordsLocal(records);
+  if (!isCloudEnabled() || !cloudSyncReady) return;
+  try {
+    if (options.deletedId) {
+      await deleteCloudRecord(options.deletedId);
+    } else if (options.record) {
+      const client = getSupabaseClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (user) {
+        const { error } = await client
+          .from('records')
+          .upsert(toCloudRecord(options.record, user.id), { onConflict: 'user_id,client_id' });
+        if (error) throw error;
+      }
+    } else {
+      await uploadRecordsToCloud(records);
+    }
+    updateCloudStatus('synced');
+  } catch (e) {
+    console.error('云端保存失败:', e);
+    updateCloudStatus('error', e.message || '保存失败');
+    showToast('⚠️ 已保存到本地，云端上传失败');
+  }
+}
+
+function saveAnonKey(key) {
+  localStorage.setItem('mj_supabase_anon_key', key.trim());
+  supabaseClient = null;
+}
+
+async function testCloudConnection() {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('请先填写 API 密钥');
+  const { error } = await client.from('records').select('id', { count: 'exact', head: true });
+  if (error) throw error;
+  return true;
+}
+
+function updateCloudStatus(state, detail) {
+  const el = document.getElementById('cloudStatus');
+  if (!el) return;
+  if (!isCloudEnabled()) {
+    el.textContent = '💾 仅本地模式';
+    el.style.color = '#999';
+    return;
+  }
+  if (state === 'synced') {
+    el.textContent = '☁️ 云端已同步';
+    el.style.color = '#2e7d32';
+  } else if (state === 'syncing') {
+    el.textContent = '⏳ 同步中...';
+    el.style.color = '#666';
+  } else {
+    el.textContent = '⚠️ 云端异常' + (detail ? '：' + detail : '');
+    el.style.color = '#c62828';
+  }
+}
