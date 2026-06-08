@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-08T09:12:06.043Z",
+  "updatedAt": "2026-06-08T09:13:28.618Z",
   "records": [
     {
       "id": "mq3fmh0sw56hem",
@@ -37,6 +37,15 @@
       "amount": 1,
       "note": "",
       "createdAt": "2026-06-08T08:32:27.420Z"
+    },
+    {
+      "id": "mq4zsmttqbx0ip",
+      "date": "2026-06-08",
+      "type": "income",
+      "category": "台费",
+      "amount": 500333,
+      "note": "",
+      "createdAt": "2026-06-08T09:12:18.065Z"
     }
   ]
 }
