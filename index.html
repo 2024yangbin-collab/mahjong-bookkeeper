@@ -583,9 +583,9 @@ body {
   </div>
 
   <div style="width:100%;max-width:340px;background:#fff;border:1px solid #e0d5c7;border-radius:12px;padding:16px;margin-bottom:12px;">
-    <div style="font-weight:600;margin-bottom:8px;">步骤 3：关闭邮箱验证</div>
-    <p style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;">在 Supabase 认证设置中，关闭 <strong>Confirm email</strong>，否则无法直接登录。</p>
-    <a href="https://supabase.com/dashboard/project/isgistikhqqvuvjqooazw/auth/providers" target="_blank" style="display:block;text-align:center;padding:10px;background:#f5f0e8;color:#8b4513;border-radius:8px;text-decoration:none;font-size:13px;">打开认证设置</a>
+    <div style="font-weight:600;margin-bottom:8px;">步骤 3：开启手机短信登录</div>
+    <p style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;">在 Supabase 中开启 <strong>Phone</strong>，并配置短信服务（Twilio 等），才能发送验证码。</p>
+    <a href="https://supabase.com/dashboard/project/isgistikhqqvuvjqooazw/auth/providers?provider=Phone" target="_blank" style="display:block;text-align:center;padding:10px;background:#f5f0e8;color:#8b4513;border-radius:8px;text-decoration:none;font-size:13px;">打开手机登录设置</a>
   </div>
 
   <div id="setupError" style="color:#c62828;font-size:13px;min-height:20px;margin-bottom:8px;max-width:340px;text-align:center;"></div>
@@ -595,20 +595,22 @@ body {
 <div id="loginScreen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:20px;">
   <div style="font-size:64px;margin-bottom:16px;">🀄</div>
   <h2 style="margin-bottom:4px;">麻将馆记账本</h2>
-  <p style="color:#999;font-size:13px;margin-bottom:20px;" id="loginSubtitle">请输入密码登录</p>
+  <p style="color:#999;font-size:13px;margin-bottom:20px;" id="loginSubtitle">手机号验证码登录，数据自动云端同步</p>
 
-  <div id="loginAccountGroup" style="width:100%;max-width:300px;margin-bottom:12px;">
-    <label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">账号</label>
-    <input type="text" id="loginAccount" placeholder="请输入账号" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px;text-align:center;">
+  <div style="width:100%;max-width:300px;margin-bottom:12px;">
+    <label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">手机号</label>
+    <input type="tel" id="loginPhone" placeholder="请输入11位手机号" maxlength="11" inputmode="numeric" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px;text-align:center;">
   </div>
   <div style="width:100%;max-width:300px;margin-bottom:8px;">
-    <label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">密码</label>
-    <input type="password" id="loginPassword" placeholder="请输入密码" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px;text-align:center;">
+    <label style="font-size:13px;color:#666;display:block;margin-bottom:4px;">验证码</label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="loginCode" placeholder="6位验证码" maxlength="6" inputmode="numeric" style="flex:1;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:16px;text-align:center;">
+      <button id="sendOtpBtn" type="button" onclick="sendOtp()" style="min-width:108px;padding:12px 8px;background:#fff;border:1px solid #8b4513;color:#8b4513;border-radius:10px;font-size:13px;cursor:pointer;white-space:nowrap;">获取验证码</button>
+    </div>
   </div>
-  <div id="loginError" style="color:#c62828;font-size:13px;min-height:20px;margin-bottom:8px;"></div>
+  <div id="loginError" style="color:#c62828;font-size:13px;min-height:20px;margin-bottom:8px;max-width:300px;text-align:center;"></div>
   <button onclick="doLogin()" style="width:100%;max-width:300px;padding:14px;background:linear-gradient(135deg,#5d2e0c,#8b4513);color:#fff;border:none;border-radius:10px;font-size:17px;font-weight:600;cursor:pointer;letter-spacing:2px;">登 录</button>
-  <button id="forgotPwdBtn" onclick="resetPassword()" style="margin-top:12px;background:none;border:none;color:#999;font-size:12px;cursor:pointer;">忘记密码？</button>
-  <div id="resetHint" style="display:none;margin-top:8px;padding:10px;background:#fff3e0;border-radius:8px;font-size:11px;color:#e65100;max-width:300px;text-align:center;">密码错误。如需重置，请清除浏览器数据后刷新页面重新设置。</div>
+  <button type="button" onclick="showSetupScreen()" style="margin-top:12px;background:none;border:none;color:#999;font-size:12px;cursor:pointer;">云端配置说明</button>
 </div>
 
 <!-- ===== Main App (hidden until login) ===== -->
@@ -670,8 +672,8 @@ body {
   <!-- Backup Tools -->
   <div class="section-title">🔧 数据管理</div>
   <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-    <button class="btn btn-outline" style="flex:1;min-width:140px;" onclick="promptCloudReconnect()">☁️ 重新连接云端</button>
-    <button class="btn btn-outline" style="flex:1;min-width:140px;" onclick="showSetupScreen()">⚙️ 云端配置</button>
+    <button class="btn btn-outline" style="flex:1;min-width:140px;" onclick="promptCloudReconnect()">☁️ 重新同步</button>
+    <button class="btn btn-outline" style="flex:1;min-width:140px;" onclick="cloudSignOut()">🚪 退出登录</button>
   </div>
   <div class="backup-row">
     <button class="btn btn-outline" onclick="exportData()">
@@ -1381,31 +1383,29 @@ async function init() {
 <!-- ===== LOGIN SYSTEM ===== -->
 <script>
 const SESSION_KEY = 'mj_logged_in';
-const AUTH_KEY = 'mj_auth_credentials';
-const DEFAULT_ACCOUNT = 'admin';
-
-function getAuthData() {
-  try {
-    const raw = localStorage.getItem(AUTH_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) { return null; }
-}
-
-function saveAuthData(data) {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(data));
-}
-
-function hashPassword(pwd) {
-  let hash = 0;
-  for (let i = 0; i < pwd.length; i++) {
-    const char = pwd.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return 'mj_' + Math.abs(hash).toString(36);
-}
+let otpCountdownTimer = null;
 
 function isLoggedIn() { return sessionStorage.getItem(SESSION_KEY) === 'true'; }
+
+function startOtpCountdown(seconds) {
+  const btn = document.getElementById('sendOtpBtn');
+  let left = seconds;
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  btn.textContent = left + 's';
+  clearInterval(otpCountdownTimer);
+  otpCountdownTimer = setInterval(() => {
+    left -= 1;
+    if (left <= 0) {
+      clearInterval(otpCountdownTimer);
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.textContent = '获取验证码';
+      return;
+    }
+    btn.textContent = left + 's';
+  }, 1000);
+}
 
 function hideAllScreens() {
   document.getElementById('setupScreen').style.display = 'none';
@@ -1423,21 +1423,13 @@ function showSetupScreen() {
 function showLoginScreen() {
   hideAllScreens();
   document.getElementById('loginScreen').style.display = 'flex';
-  const auth = getAuthData();
-  const accountEl = document.getElementById('loginAccount');
-  const forgotBtn = document.getElementById('forgotPwdBtn');
-  if (!auth) {
-    document.getElementById('loginSubtitle').textContent = '首次使用，请设置账号和密码';
-    accountEl.value = DEFAULT_ACCOUNT;
-    accountEl.readOnly = false;
-    forgotBtn.style.display = 'none';
-  } else {
-    document.getElementById('loginSubtitle').textContent = '登录后自动云端同步数据';
-    accountEl.value = auth.account;
-    accountEl.readOnly = true;
-    forgotBtn.style.display = 'block';
+  const savedPhone = localStorage.getItem('mj_phone') || localStorage.getItem('mj_pending_phone') || '';
+  if (savedPhone) {
+    document.getElementById('loginPhone').value = savedPhone.replace(/^\+86/, '');
   }
-  document.getElementById('loginPassword').focus();
+  document.getElementById('loginCode').value = '';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginPhone').focus();
 }
 
 async function copySetupSql() {
@@ -1459,51 +1451,41 @@ async function completeSetup() {
   catch (e) { errorEl.textContent = '连接失败：' + (e.message || '请确认已运行 SQL 脚本'); }
 }
 
-async function doLogin() {
-  const account = document.getElementById('loginAccount').value.trim();
-  const password = document.getElementById('loginPassword').value;
+async function sendOtp() {
+  const phone = document.getElementById('loginPhone').value.trim();
   const errorEl = document.getElementById('loginError');
-  const resetHint = document.getElementById('resetHint');
-  if (!account) { errorEl.textContent = '请输入账号'; return; }
-  if (!password) { errorEl.textContent = '请输入密码'; return; }
-  if (password.length < 5) { errorEl.textContent = '密码至少 5 位'; return; }
-
-  const auth = getAuthData();
-  const isFirst = !auth;
-
-  if (!isFirst && (account !== auth.account || hashPassword(password) !== auth.password)) {
-    errorEl.textContent = '账号或密码错误';
-    resetHint.style.display = 'block';
-    return;
-  }
-
-  if (isFirst) {
-    saveAuthData({ account, password: hashPassword(password) });
-  }
-
-  sessionStorage.setItem(SESSION_KEY, 'true');
-  resetHint.style.display = 'none';
-  errorEl.textContent = '正在连接云端...';
-
+  errorEl.textContent = '';
   try {
-    await syncCloudAuth(account, password);
+    await sendPhoneOtp(phone);
+    startOtpCountdown(60);
+    showToast('验证码已发送');
+    document.getElementById('loginCode').focus();
+  } catch (e) {
+    errorEl.textContent = formatCloudError(e);
+  }
+}
+
+async function doLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const code = document.getElementById('loginCode').value.trim();
+  const errorEl = document.getElementById('loginError');
+  if (!phone) { errorEl.textContent = '请输入手机号'; return; }
+  if (!code) { errorEl.textContent = '请输入验证码'; return; }
+  errorEl.textContent = '正在验证...';
+  try {
+    await verifyPhoneOtp(phone, code);
+    sessionStorage.setItem(SESSION_KEY, 'true');
     errorEl.textContent = '';
     await showMainApp();
-    showToast(isFirst ? '☁️ 账号已创建，云端已连接' : '☁️ 登录成功，云端已同步');
+    showToast('☁️ 登录成功，云端已连接');
   } catch (e) {
-    errorEl.textContent = '云端：' + formatCloudError(e);
-    await showMainApp();
-    showToast('⚠️ 已进入本地模式，请完成云端配置后点「重新连接云端」');
+    errorEl.textContent = formatCloudError(e);
   }
 }
 
 async function promptCloudReconnect() {
-  const auth = getAuthData();
-  if (!auth) { showSetupScreen(); return; }
-  const password = prompt('请输入密码以重新连接云端：');
-  if (!password) return;
   try {
-    await retryCloudSync(auth.account, password);
+    await retryCloudSync();
   } catch (e) {
     showToast('❌ ' + formatCloudError(e));
     updateCloudStatus('error', formatCloudError(e));
@@ -1516,8 +1498,6 @@ async function showMainApp() {
   await init();
 }
 
-function resetPassword() { document.getElementById('resetHint').style.display = 'block'; }
-
 document.addEventListener('keydown', function(e) {
   if (e.key !== 'Enter') return;
   if (document.getElementById('setupScreen').style.display === 'flex') completeSetup();
@@ -1525,15 +1505,16 @@ document.addEventListener('keydown', function(e) {
 });
 
 (async function bootstrap() {
-  document.getElementById('resetHint').innerHTML = '忘记密码？请清除本网站浏览器数据后刷新，重新设置密码。';
   if (!isCloudEnabled()) {
     showSetupScreen();
     return;
   }
-  if (isLoggedIn()) {
+  if (await hasCloudSession()) {
+    sessionStorage.setItem(SESSION_KEY, 'true');
     await showMainApp();
     return;
   }
+  sessionStorage.removeItem(SESSION_KEY);
   showLoginScreen();
 })();
 </script>

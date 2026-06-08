@@ -40,8 +40,17 @@ function getSupabaseClient() {
   return supabaseClient;
 }
 
-function accountToEmail(account) {
-  return account.trim().toLowerCase() + '@mahjong-bookkeeper.app';
+function normalizePhone(raw) {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) return '+86' + digits;
+  if (digits.length === 13 && digits.startsWith('86')) return '+' + digits;
+  if (String(raw || '').startsWith('+') && digits.length >= 11) return '+' + digits;
+  throw new Error('请输入11位手机号');
+}
+
+function maskPhone(phone) {
+  const p = phone || '';
+  return p.length >= 7 ? p.slice(0, -8) + '****' + p.slice(-4) : p;
 }
 
 function fromCloudRecord(row) {
@@ -104,44 +113,57 @@ async function deleteCloudRecord(clientId) {
   if (error) throw error;
 }
 
-async function syncCloudAuth(account, password) {
+async function sendPhoneOtp(phone) {
   if (!isCloudEnabled()) throw new Error('云端未配置');
   const client = getSupabaseClient();
   if (!client) throw new Error('云端未配置');
-  const email = accountToEmail(account);
-  let result = await withTimeout(
-    client.auth.signInWithPassword({ email, password }),
+  const normalized = normalizePhone(phone);
+  const { error } = await withTimeout(
+    client.auth.signInWithOtp({ phone: normalized }),
     CLOUD_TIMEOUT_MS,
     '云端连接超时'
   );
-  if (result.error) {
-    const msg = result.error.message || '';
-    if (/invalid login|invalid_credentials|密码|password/i.test(msg)) {
-      result = await withTimeout(
-        client.auth.signUp({ email, password }),
-        CLOUD_TIMEOUT_MS,
-        '云端连接超时'
-      );
-      if (result.error) {
-        if (/already registered|already exists/i.test(result.error.message || '')) {
-          throw new Error('云端账号已存在，密码不一致，请在 Supabase 重置密码');
-        }
-        throw result.error;
-      }
-      if (!result.data.session) throw new Error('请在 Supabase 关闭邮箱验证后重试');
-    } else {
-      throw result.error;
-    }
-  }
-  return true;
+  if (error) throw error;
+  localStorage.setItem('mj_pending_phone', normalized);
+  return normalized;
 }
 
-async function retryCloudSync(account, password) {
-  updateCloudStatus('syncing');
-  await syncCloudAuth(account, password);
-  await syncRecordsOnLogin();
-  updateCloudStatus('synced');
-  showToast('☁️ 云端已重新连接');
+async function verifyPhoneOtp(phone, code) {
+  if (!isCloudEnabled()) throw new Error('云端未配置');
+  const client = getSupabaseClient();
+  if (!client) throw new Error('云端未配置');
+  const normalized = normalizePhone(phone);
+  const token = String(code || '').trim();
+  if (!/^\d{6}$/.test(token)) throw new Error('请输入6位验证码');
+  const { data, error } = await withTimeout(
+    client.auth.verifyOtp({ phone: normalized, token, type: 'sms' }),
+    CLOUD_TIMEOUT_MS,
+    '云端连接超时'
+  );
+  if (error) throw error;
+  if (!data.session) throw new Error('验证失败，请重新获取验证码');
+  localStorage.setItem('mj_phone', normalized);
+  localStorage.removeItem('mj_pending_phone');
+  return data.session;
+}
+
+async function retryCloudSync() {
+  if (await hasCloudSession()) {
+    updateCloudStatus('syncing');
+    await syncRecordsOnLogin();
+    showToast('☁️ 云端已重新同步');
+    return;
+  }
+  sessionStorage.removeItem('mj_logged_in');
+  showLoginScreen();
+  showToast('请重新验证手机号');
+}
+
+async function cloudSignOut() {
+  const client = getSupabaseClient();
+  if (client) await client.auth.signOut();
+  sessionStorage.removeItem('mj_logged_in');
+  showLoginScreen();
 }
 
 async function syncRecordsOnLogin() {
