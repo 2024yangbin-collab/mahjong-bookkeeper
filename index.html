@@ -292,6 +292,31 @@ body {
   border-color: var(--primary);
 }
 
+.continuous-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: #fafafa;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.continuous-toggle.on {
+  border-color: var(--primary);
+  background: #fff8f0;
+  color: var(--primary);
+  font-weight: 600;
+}
+
 /* Record List */
 .record-list {
   display: flex;
@@ -759,6 +784,7 @@ body {
       <input type="text" id="formNote" placeholder="如：3号桌下午场">
     </div>
 
+    <button type="button" id="continuousToggle" class="continuous-toggle on" onclick="toggleContinuousRecord()">🔁 连续记账已开启</button>
     <button class="btn btn-primary" onclick="saveRecord()">✓ 确认保存</button>
     <button class="btn" style="width:100%;margin-top:8px;background:#f5f5f5;color:#999;" onclick="closeModalDirect()">取消</button>
   </div>
@@ -782,6 +808,7 @@ body {
 const STORAGE_KEY = 'mj_accounting_records';
 const BACKUP_DATE_KEY = 'mj_last_backup_date';
 const AUTO_BACKUP_KEY = 'mj_auto_backup_enabled';
+const CONTINUOUS_KEY = 'mj_continuous_record';
 
 function loadRecordsLocal() {
   try {
@@ -1222,6 +1249,36 @@ function refreshAll() {
   renderReport(stats);
 }
 
+// ========== CONTINUOUS RECORD ==========
+function isContinuousRecord() {
+  const val = localStorage.getItem(CONTINUOUS_KEY);
+  return val === null ? true : val === 'true';
+}
+
+function setContinuousRecord(enabled) {
+  localStorage.setItem(CONTINUOUS_KEY, String(enabled));
+}
+
+function updateContinuousToggleUI() {
+  const el = document.getElementById('continuousToggle');
+  if (!el) return;
+  const on = isContinuousRecord();
+  el.classList.toggle('on', on);
+  el.textContent = on ? '🔁 连续记账已开启' : '🔁 连续记账已关闭';
+}
+
+function toggleContinuousRecord() {
+  setContinuousRecord(!isContinuousRecord());
+  updateContinuousToggleUI();
+  showToast(isContinuousRecord() ? '✅ 连续记账已开启' : '⏸️ 连续记账已关闭');
+}
+
+function resetFormForNextRecord() {
+  document.getElementById('formAmount').value = '';
+  document.getElementById('formNote').value = '';
+  setTimeout(() => document.getElementById('formAmount').focus(), 100);
+}
+
 // ========== MODAL ==========
 function openModal(type) {
   currentModalType = type;
@@ -1233,6 +1290,7 @@ function openModal(type) {
   document.getElementById('formNote').value = '';
 
   renderChips();
+  updateContinuousToggleUI();
   document.getElementById('modalOverlay').classList.add('show');
   setTimeout(() => document.getElementById('formAmount').focus(), 300);
 }
@@ -1284,7 +1342,6 @@ function saveRecord() {
 
   records.push(record);
   persistRecords({ record: record });
-  document.getElementById('modalOverlay').classList.remove('show');
 
   // Sync month to the record's date
   const [y, m] = date.split('-').map(Number);
@@ -1294,7 +1351,13 @@ function saveRecord() {
 
   refreshAll();
   const label = currentModalType === 'income' ? '收入' : '支出';
-  showToast('✅ ' + label + '已记录 ' + timeStr);
+  showToast('✅ ' + label + '已记录 ' + timeStr + (isContinuousRecord() ? '，继续记下一笔' : ''));
+
+  if (isContinuousRecord()) {
+    resetFormForNextRecord();
+  } else {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
 }
 
 function deleteRecord(id) {
