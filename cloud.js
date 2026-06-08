@@ -42,6 +42,7 @@ async function withRetry(fn, attempts) {
 function formatCloudError(e) {
   const msg = (e && (e.message || e.error_description || String(e))) || '未知错误';
   if (/Bad credentials|401|Unauthorized/i.test(msg)) return 'GitHub Token 无效，请重新创建';
+  if (/does not match|sha|409|conflict/i.test(msg)) return '云端文件冲突，请点重新同步';
   if (isNetworkError(e)) {
     return isMobileDevice()
       ? '手机网络无法访问云端，请换 WiFi 后重试'

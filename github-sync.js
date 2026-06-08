@@ -31,6 +31,16 @@ function mergeRecords(localList, remoteList) {
   return Array.from(merged.values());
 }
 
+function isShaConflictError(e) {
+  const msg = (e && e.message) || '';
+  return e.status === 409 || /does not match|sha|409|conflict/i.test(msg);
+}
+
+function contentsApiUrl() {
+  return 'https://api.github.com/repos/' + GITHUB_SYNC.owner + '/' +
+    GITHUB_SYNC.repo + '/contents/' + GITHUB_SYNC.path;
+}
+
 async function githubApi(url, options) {
   const token = getGithubToken();
   if (!token) throw new Error('请先配置 GitHub Token');
@@ -63,6 +73,18 @@ async function fetchGithubRecordsPublic() {
   return json.records || [];
 }
 
+async function fetchGithubFileMeta() {
+  const base = contentsApiUrl();
+  try {
+    const data = await githubApi(base + '?ref=' + GITHUB_SYNC.branch + '&_=' + Date.now());
+    const json = JSON.parse(decodeURIComponent(escape(atob(data.content.replace(/\n/g, '')))));
+    return { records: json.records || [], sha: data.sha };
+  } catch (e) {
+    if (/404|Not Found/i.test(e.message || '')) return { records: [], sha: null };
+    throw e;
+  }
+}
+
 async function fetchGithubRecords() {
   if (!isGithubSyncEnabled()) {
     try {
@@ -71,30 +93,12 @@ async function fetchGithubRecords() {
       return [];
     }
   }
-  const base = 'https://api.github.com/repos/' + GITHUB_SYNC.owner + '/' + GITHUB_SYNC.repo + '/contents/' + GITHUB_SYNC.path;
-  try {
-    const data = await githubApi(base + '?ref=' + GITHUB_SYNC.branch + '&t=' + Date.now());
-    const json = JSON.parse(decodeURIComponent(escape(atob(data.content.replace(/\n/g, '')))));
-    return json.records || [];
-  } catch (e) {
-    if (/404|Not Found/i.test(e.message || '')) return [];
-    throw e;
-  }
-}
-
-async function getGithubFileSha() {
-  const base = 'https://api.github.com/repos/' + GITHUB_SYNC.owner + '/' + GITHUB_SYNC.repo + '/contents/' + GITHUB_SYNC.path;
-  try {
-    const existing = await githubApi(base + '?ref=' + GITHUB_SYNC.branch);
-    return existing.sha;
-  } catch (e) {
-    if (/404|Not Found/i.test(e.message || '')) return null;
-    throw e;
-  }
+  const meta = await fetchGithubFileMeta();
+  return meta.records;
 }
 
 async function putGithubRecords(list, sha) {
-  const base = 'https://api.github.com/repos/' + GITHUB_SYNC.owner + '/' + GITHUB_SYNC.repo + '/contents/' + GITHUB_SYNC.path;
+  const base = contentsApiUrl();
   const payload = {
     version: 1,
     updatedAt: new Date().toISOString(),
@@ -116,18 +120,17 @@ async function putGithubRecords(list, sha) {
 async function uploadGithubRecords(list) {
   if (!isGithubSyncEnabled()) throw new Error('请先配置 GitHub Token');
   let lastError;
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 6; attempt++) {
     try {
-      const remote = await fetchGithubRecords();
+      const { records: remote, sha } = await fetchGithubFileMeta();
       const merged = mergeRecords(list, remote);
-      const sha = await getGithubFileSha();
       await putGithubRecords(merged, sha);
       localStorage.setItem('mj_last_github_sync', new Date().toISOString());
       return merged;
     } catch (e) {
       lastError = e;
-      if ((e.status === 409 || /sha|409/i.test(e.message || '')) && attempt < 3) {
-        await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+      if (isShaConflictError(e) && attempt < 5) {
+        await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
         continue;
       }
       throw e;
