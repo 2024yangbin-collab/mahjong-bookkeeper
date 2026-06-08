@@ -1,7 +1,16 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-08T09:09:02.932Z",
+  "updatedAt": "2026-06-08T09:10:52.712Z",
   "records": [
+    {
+      "id": "mq3fmh0sw56hem",
+      "date": "2026-06-07",
+      "type": "income",
+      "category": "台费",
+      "amount": 500,
+      "note": "",
+      "createdAt": "2026-06-07T06:59:52.108Z"
+    },
     {
       "id": "mq4xcsli1eplzl",
       "date": "2026-06-08",
@@ -19,15 +28,6 @@
       "amount": 16,
       "note": "",
       "createdAt": "2026-06-08T08:04:07.566Z"
-    },
-    {
-      "id": "mq3fmh0sw56hem",
-      "date": "2026-06-07",
-      "type": "income",
-      "category": "台费",
-      "amount": 500,
-      "note": "",
-      "createdAt": "2026-06-07T06:59:52.108Z"
     },
     {
       "id": "mq4yde705w66js",
