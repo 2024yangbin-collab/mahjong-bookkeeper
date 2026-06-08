@@ -3,6 +3,14 @@
  */
 let supabaseClient = null;
 let cloudSyncReady = false;
+const CLOUD_TIMEOUT_MS = 12000;
+
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message || '连接超时')), ms))
+  ]);
+}
 
 function isCloudEnabled() {
   return !!(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
@@ -83,6 +91,28 @@ async function deleteCloudRecord(clientId) {
   if (error) throw error;
 }
 
+async function syncCloudAuth(account, password) {
+  if (!isCloudEnabled()) return false;
+  const client = getSupabaseClient();
+  if (!client) return false;
+  const email = accountToEmail(account);
+  let result = await withTimeout(
+    client.auth.signInWithPassword({ email, password }),
+    CLOUD_TIMEOUT_MS,
+    '云端连接超时'
+  );
+  if (result.error) {
+    result = await withTimeout(
+      client.auth.signUp({ email, password }),
+      CLOUD_TIMEOUT_MS,
+      '云端连接超时'
+    );
+    if (result.error) throw result.error;
+    if (!result.data.session) throw new Error('请在 Supabase 关闭邮箱验证');
+  }
+  return true;
+}
+
 async function syncRecordsOnLogin() {
   if (!isCloudEnabled()) {
     records = loadRecordsLocal();
@@ -91,7 +121,7 @@ async function syncRecordsOnLogin() {
   }
   try {
     const local = loadRecordsLocal();
-    const cloud = await fetchCloudRecords();
+    const cloud = await withTimeout(fetchCloudRecords(), CLOUD_TIMEOUT_MS, '云端连接超时');
     if (cloud === null) {
       records = local;
       cloudSyncReady = true;
