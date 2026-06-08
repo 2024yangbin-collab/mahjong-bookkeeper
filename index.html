@@ -362,6 +362,13 @@ body {
   text-overflow: ellipsis;
 }
 
+.record-item .record-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
 .record-item .amount {
   font-size: 17px;
   font-weight: 700;
@@ -915,6 +922,16 @@ function formatMoney(n) {
   return '¥' + Number(n).toFixed(2);
 }
 
+function formatRecordTime(createdAt) {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (isNaN(d.getTime())) return '';
+  const h = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return h + ':' + mi + ':' + s;
+}
+
 function getDayProfit(records, dateStr) {
   let income = 0, expense = 0;
   records.forEach(r => {
@@ -988,7 +1005,7 @@ function renderTodayRecords(today) {
     <div class="record-item ${r.type}">
       <div class="icon">${r.type === 'income' ? '💰' : '💸'}</div>
       <div class="info">
-        <div class="category">${r.category}</div>
+        <div class="category">${r.category}<span class="record-time">${formatRecordTime(r.createdAt)}</span></div>
         ${r.note ? `<div class="note">${escapeHtml(r.note)}</div>` : ''}
       </div>
       <div class="amount">${r.type === 'income' ? '+' : '-'}${formatMoney(r.amount)}</div>
@@ -1034,7 +1051,7 @@ function renderMonthRecords() {
         <div class="record-item ${r.type}" style="margin-bottom:4px;">
           <div class="icon">${r.type === 'income' ? '💰' : '💸'}</div>
           <div class="info">
-            <div class="category">${r.category}</div>
+            <div class="category">${r.category}<span class="record-time">${formatRecordTime(r.createdAt)}</span></div>
             ${r.note ? `<div class="note">${escapeHtml(r.note)}</div>` : ''}
           </div>
           <div class="amount">${r.type === 'income' ? '+' : '-'}${formatMoney(r.amount)}</div>
@@ -1243,6 +1260,7 @@ function saveRecord() {
   if (!amountStr || parseFloat(amountStr) <= 0) { showToast('请输入有效金额'); return; }
   if (!selectedCategory) { showToast('请选择类别'); return; }
 
+  const now = new Date();
   const record = {
     id: genId(),
     date: date,
@@ -1250,8 +1268,9 @@ function saveRecord() {
     category: selectedCategory,
     amount: parseFloat(parseFloat(amountStr).toFixed(2)),
     note: note,
-    createdAt: new Date().toISOString()
+    createdAt: now.toISOString()
   };
+  const timeStr = formatRecordTime(record.createdAt);
 
   records.push(record);
   persistRecords({ record: record });
@@ -1264,7 +1283,8 @@ function saveRecord() {
   updateMonthLabel();
 
   refreshAll();
-  showToast(currentModalType === 'income' ? '✅ 收入已记录' : '✅ 支出已记录');
+  const label = currentModalType === 'income' ? '收入' : '支出';
+  showToast('✅ ' + label + '已记录 ' + timeStr);
 }
 
 function deleteRecord(id) {
@@ -1487,11 +1507,15 @@ async function doLogin() {
 }
 
 async function promptCloudReconnect() {
-  const auth = getAuthData();
-  if (!auth) { showLoginScreen(); return; }
-  const password = prompt('请输入密码以同步云端：');
-  if (!password) return;
   try {
+    if (await hasCloudSession()) {
+      await retryCloudSync();
+      return;
+    }
+    const auth = getAuthData();
+    if (!auth) { showLoginScreen(); return; }
+    const password = prompt('云端连接已断开，请输入密码重新同步：');
+    if (!password) return;
     await retryCloudSync(auth.account, password);
   } catch (e) {
     showToast('❌ ' + formatCloudError(e));

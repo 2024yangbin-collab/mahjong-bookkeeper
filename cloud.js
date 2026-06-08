@@ -138,7 +138,7 @@ async function syncCloudAuth(account, password) {
 
 async function retryCloudSync(account, password) {
   updateCloudStatus('syncing');
-  if (password) await syncCloudAuth(account, password);
+  if (account && password) await syncCloudAuth(account, password);
   await syncRecordsOnLogin();
   showToast('☁️ 云端已重新同步');
 }
