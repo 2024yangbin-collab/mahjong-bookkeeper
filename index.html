@@ -1443,14 +1443,12 @@ function showLoginScreen() {
   document.getElementById('loginScreen').style.display = 'flex';
   const auth = getAuthData();
   const accountEl = document.getElementById('loginAccount');
+  accountEl.value = DEFAULT_ACCOUNT;
+  accountEl.readOnly = true;
   if (!auth) {
-    document.getElementById('loginSubtitle').textContent = '首次使用，请设置账号和密码';
-    accountEl.value = DEFAULT_ACCOUNT;
-    accountEl.readOnly = false;
+    document.getElementById('loginSubtitle').textContent = '换设备登录：账号 admin，密码与电脑相同';
   } else {
-    document.getElementById('loginSubtitle').textContent = '登录后自动上传云端';
-    accountEl.value = auth.account;
-    accountEl.readOnly = true;
+    document.getElementById('loginSubtitle').textContent = '登录后自动同步云端数据';
   }
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').textContent = '';
