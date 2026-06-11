@@ -24,10 +24,16 @@ function toBase64Utf8(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
 
-function mergeRecords(localList, remoteList) {
+function mergeRecords(localList, remoteList, options = {}) {
+  const deletedIds = Array.isArray(options.deletedIds) ? options.deletedIds : [];
+  const deletedSet = new Set(deletedIds.filter(Boolean));
   const merged = new Map();
-  (remoteList || []).forEach(r => merged.set(r.id, r));
-  (localList || []).forEach(r => merged.set(r.id, r));
+  (remoteList || []).forEach(r => {
+    if (!deletedSet.has(r.id)) merged.set(r.id, r);
+  });
+  (localList || []).forEach(r => {
+    if (!deletedSet.has(r.id)) merged.set(r.id, r);
+  });
   return Array.from(merged.values());
 }
 
@@ -117,13 +123,13 @@ async function putGithubRecords(list, sha) {
   });
 }
 
-async function uploadGithubRecords(list) {
+async function uploadGithubRecords(list, options = {}) {
   if (!isGithubSyncEnabled()) throw new Error('请先配置 GitHub Token');
   let lastError;
   for (let attempt = 0; attempt < 6; attempt++) {
     try {
       const { records: remote, sha } = await fetchGithubFileMeta();
-      const merged = mergeRecords(list, remote);
+      const merged = mergeRecords(list, remote, options);
       await putGithubRecords(merged, sha);
       localStorage.setItem('mj_last_github_sync', new Date().toISOString());
       return merged;
