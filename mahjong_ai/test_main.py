@@ -3,7 +3,7 @@ import subprocess
 import sys
 import unittest
 
-from mahjong_ai.main import choose_discard, decide_response, restore_state
+from mahjong_ai.main import choose_discard, decide_response, hand_shanten, restore_state, ukeire_count
 
 
 INITIAL = (
@@ -43,6 +43,17 @@ class MahjongBaselineTest(unittest.TestCase):
     def test_choose_discard_prefers_isolated_honor(self):
         hand = ["W2", "W3", "W4", "B2", "B3", "B4", "T5", "T6", "T7", "F1", "J1", "J1", "W9"]
         self.assertEqual(choose_discard(hand), "F1")
+
+    def test_standard_hand_shanten(self):
+        complete = ["W1", "W2", "W3", "W4", "W5", "W6", "B1", "B2", "B3", "F1", "F1", "F1", "T1", "T1"]
+        tenpai = complete[:-1]
+        self.assertEqual(hand_shanten(complete), -1)
+        self.assertEqual(hand_shanten(tenpai), 0)
+        self.assertGreaterEqual(ukeire_count(tenpai), 1)
+
+    def test_choose_discard_preserves_lower_shanten(self):
+        hand = ["W1", "W2", "W3", "W4", "W5", "W6", "B1", "B2", "B3", "F1", "F1", "F1", "T1", "J1"]
+        self.assertEqual(choose_discard(hand), "J1")
 
     def test_cli_outputs_json(self):
         payload = json.dumps({"requests": ["0 0 2", INITIAL, "2 T6"], "responses": ["PASS", "PASS"]})

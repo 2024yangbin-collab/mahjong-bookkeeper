@@ -13,6 +13,7 @@ import json
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Iterable, List, Sequence
 
 
@@ -20,6 +21,14 @@ SUITS = {"W", "B", "T"}
 HONORS = {"F", "J"}
 FLOWERS = {"H"}
 SUIT_ORDER = {"W": 0, "B": 1, "T": 2, "F": 3, "J": 4, "H": 5}
+TILE_TYPES = (
+    [f"W{i}" for i in range(1, 10)]
+    + [f"B{i}" for i in range(1, 10)]
+    + [f"T{i}" for i in range(1, 10)]
+    + [f"F{i}" for i in range(1, 5)]
+    + [f"J{i}" for i in range(1, 4)]
+)
+TILE_INDEX = {tile: index for index, tile in enumerate(TILE_TYPES)}
 
 
 @dataclass
@@ -105,6 +114,102 @@ def tile_rank(tile: str) -> int:
         return 99
 
 
+def tile_counts(tiles: Iterable[str]) -> List[int]:
+    counts = [0] * len(TILE_TYPES)
+    for tile in tiles:
+        index = TILE_INDEX.get(tile)
+        if index is not None:
+            counts[index] += 1
+    return counts
+
+
+def is_sequence_start(index: int) -> bool:
+    return index < 27 and index % 9 <= 6
+
+
+@lru_cache(maxsize=200000)
+def shanten_from_count_tuple(count_tuple: tuple[int, ...]) -> int:
+    counts = list(count_tuple)
+    best = 8
+
+    def finish(melds: int, taatsu: int, pair: int) -> None:
+        nonlocal best
+        taatsu = min(taatsu, 4 - melds)
+        best = min(best, 8 - melds * 2 - taatsu - pair)
+
+    def search(index: int, melds: int, taatsu: int, pair: int) -> None:
+        while index < len(counts) and counts[index] == 0:
+            index += 1
+        if index >= len(counts):
+            finish(melds, taatsu, pair)
+            return
+
+        if counts[index] >= 3:
+            counts[index] -= 3
+            search(index, melds + 1, taatsu, pair)
+            counts[index] += 3
+
+        if is_sequence_start(index) and counts[index + 1] and counts[index + 2]:
+            counts[index] -= 1
+            counts[index + 1] -= 1
+            counts[index + 2] -= 1
+            search(index, melds + 1, taatsu, pair)
+            counts[index] += 1
+            counts[index + 1] += 1
+            counts[index + 2] += 1
+
+        if counts[index] >= 2:
+            counts[index] -= 2
+            if pair == 0:
+                search(index, melds, taatsu, 1)
+            search(index, melds, taatsu + 1, pair)
+            counts[index] += 2
+
+        if is_sequence_start(index) and counts[index + 1]:
+            counts[index] -= 1
+            counts[index + 1] -= 1
+            search(index, melds, taatsu + 1, pair)
+            counts[index] += 1
+            counts[index + 1] += 1
+
+        if is_sequence_start(index) and counts[index + 2]:
+            counts[index] -= 1
+            counts[index + 2] -= 1
+            search(index, melds, taatsu + 1, pair)
+            counts[index] += 1
+            counts[index + 2] += 1
+
+        counts[index] -= 1
+        search(index, melds, taatsu, pair)
+        counts[index] += 1
+
+    search(0, 0, 0, 0)
+    return best
+
+
+def shanten_from_counts(counts: List[int]) -> int:
+    return shanten_from_count_tuple(tuple(counts))
+
+
+def hand_shanten(tiles: Iterable[str]) -> int:
+    """Return standard 4-melds-and-a-pair shanten; -1 means complete."""
+    return shanten_from_counts(tile_counts(tiles))
+
+
+def ukeire_count(tiles: Iterable[str]) -> int:
+    """Count tile types that improve standard-hand shanten on the next draw."""
+    hand = [tile for tile in tiles if tile in TILE_INDEX]
+    current = hand_shanten(hand)
+    counts = tile_counts(hand)
+    improvements = 0
+    for tile, index in TILE_INDEX.items():
+        if counts[index] >= 4:
+            continue
+        if hand_shanten(hand + [tile]) < current:
+            improvements += 1
+    return improvements
+
+
 def discard_score(tile: str, counts: Counter[str]) -> int:
     """Lower score means the tile is a better discard candidate."""
     score = 0
@@ -141,7 +246,18 @@ def choose_discard(hand: Iterable[str]) -> str:
     if not tiles:
         return "W1"
     counts = Counter(tiles)
-    return min(tiles, key=lambda tile: (discard_score(tile, counts), tile_sort_key(tile)))
+    candidates = []
+    for tile in sorted(set(tiles), key=tile_sort_key):
+        rest = tiles.copy()
+        rest.remove(tile)
+        candidates.append((
+            hand_shanten(rest),
+            -ukeire_count(rest),
+            discard_score(tile, counts),
+            tile_sort_key(tile),
+            tile,
+        ))
+    return min(candidates)[-1]
 
 
 def decide_response(payload: dict) -> str:
