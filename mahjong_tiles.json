@@ -7,6 +7,7 @@
     "note": "Project canonical tile art source. There are 42 unique tile faces: 34 normal tiles plus 8 flowers."
   },
   "imageTemplates": {
+    "localJpg": "assets/mahjong/tiles/{code}.jpg",
     "jpgDefault": "https://el.eeurl.com/jpg/mj/s2/{code}.jpg",
     "gifStereoStand": "https://el.eeurl.com/gif/mj/s1/stand/{code}.gif",
     "svgSize3": "https://el.eeurl.com/svg/mj/s3/{code}.svg"

@@ -8,6 +8,7 @@
 - 字符串规则：`https://majiang.world/article/麻将牌的字符串表示方法`
 - Markdown 图片规则：`https://majiang.world/article/麻将Markdown表示方法`
 - 图片资源基址：`https://el.eeurl.com`
+- 本地 JPG 目录：`assets/mahjong/tiles/`
 - 机器可读映射：`mahjong_tiles.json`
 
 ## 42 张唯一牌面
@@ -40,7 +41,11 @@ Botzone 的国标麻将编码和 `majiang.world` 编码不同，以后 UI 展示
 
 ## 图片 URL 模板
 
-已在 `majiang.world` 文章中验证的模板：
+本项目已下载 42 张标准 JPG 到本地，优先使用本地模板：
+
+- 本地 JPG：`assets/mahjong/tiles/{code}.jpg`
+
+远程模板保留作来源追溯和重新下载：
 
 - 默认 jpg：`https://el.eeurl.com/jpg/mj/s2/{code}.jpg`
 - 立体 gif：`https://el.eeurl.com/gif/mj/s1/stand/{code}.gif`
@@ -48,13 +53,13 @@ Botzone 的国标麻将编码和 `majiang.world` 编码不同，以后 UI 展示
 
 示例：
 
-- `a1` 一万：`https://el.eeurl.com/jpg/mj/s2/a1.jpg`
-- `e3` 白板：`https://el.eeurl.com/jpg/mj/s2/e3.jpg`
-- `f8` 菊：`https://el.eeurl.com/jpg/mj/s2/f8.jpg`
+- `a1` 一万：`assets/mahjong/tiles/a1.jpg`
+- `e3` 白板：`assets/mahjong/tiles/e3.jpg`
+- `f8` 菊：`assets/mahjong/tiles/f8.jpg`
 
 ## 使用约定
 
 1. 以后项目内的麻将牌展示只使用这 42 张唯一牌面。
 2. 业务逻辑可以继续使用 Botzone 编码，但展示层必须转换为 `majiang.world` 编码。
 3. 不再混用 `/riichi/img/*.gif` 的日麻资源作为标准牌图。
-4. 未确认授权前，不把远程图片批量下载进仓库；先记录 URL 模板和编码映射。
+4. UI 中优先调用本地 `assets/mahjong/tiles/{code}.jpg`，不要依赖远程图片稳定性。
