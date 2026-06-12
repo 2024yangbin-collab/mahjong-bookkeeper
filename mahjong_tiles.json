@@ -1,0 +1,107 @@
+{
+  "source": {
+    "site": "https://majiang.world",
+    "stringArticle": "https://majiang.world/article/麻将牌的字符串表示方法",
+    "markdownArticle": "https://majiang.world/article/麻将Markdown表示方法",
+    "imageBase": "https://el.eeurl.com",
+    "note": "Project canonical tile art source. There are 42 unique tile faces: 34 normal tiles plus 8 flowers."
+  },
+  "imageTemplates": {
+    "localJpg": "assets/mahjong/tiles/{code}.jpg",
+    "jpgDefault": "https://el.eeurl.com/jpg/mj/s2/{code}.jpg",
+    "gifStereoStand": "https://el.eeurl.com/gif/mj/s1/stand/{code}.gif",
+    "svgSize3": "https://el.eeurl.com/svg/mj/s3/{code}.svg"
+  },
+  "groups": [
+    {
+      "kind": "characters",
+      "name": "万子",
+      "majiangWorldPrefix": "a",
+      "botzonePrefix": "W",
+      "tiles": [
+        { "code": "a1", "botzone": "W1", "name": "一万" },
+        { "code": "a2", "botzone": "W2", "name": "二万" },
+        { "code": "a3", "botzone": "W3", "name": "三万" },
+        { "code": "a4", "botzone": "W4", "name": "四万" },
+        { "code": "a5", "botzone": "W5", "name": "五万" },
+        { "code": "a6", "botzone": "W6", "name": "六万" },
+        { "code": "a7", "botzone": "W7", "name": "七万" },
+        { "code": "a8", "botzone": "W8", "name": "八万" },
+        { "code": "a9", "botzone": "W9", "name": "九万" }
+      ]
+    },
+    {
+      "kind": "bamboo",
+      "name": "索子",
+      "majiangWorldPrefix": "b",
+      "botzonePrefix": "T",
+      "tiles": [
+        { "code": "b1", "botzone": "T1", "name": "一索" },
+        { "code": "b2", "botzone": "T2", "name": "二索" },
+        { "code": "b3", "botzone": "T3", "name": "三索" },
+        { "code": "b4", "botzone": "T4", "name": "四索" },
+        { "code": "b5", "botzone": "T5", "name": "五索" },
+        { "code": "b6", "botzone": "T6", "name": "六索" },
+        { "code": "b7", "botzone": "T7", "name": "七索" },
+        { "code": "b8", "botzone": "T8", "name": "八索" },
+        { "code": "b9", "botzone": "T9", "name": "九索" }
+      ]
+    },
+    {
+      "kind": "dots",
+      "name": "筒子",
+      "majiangWorldPrefix": "c",
+      "botzonePrefix": "B",
+      "tiles": [
+        { "code": "c1", "botzone": "B1", "name": "一筒" },
+        { "code": "c2", "botzone": "B2", "name": "二筒" },
+        { "code": "c3", "botzone": "B3", "name": "三筒" },
+        { "code": "c4", "botzone": "B4", "name": "四筒" },
+        { "code": "c5", "botzone": "B5", "name": "五筒" },
+        { "code": "c6", "botzone": "B6", "name": "六筒" },
+        { "code": "c7", "botzone": "B7", "name": "七筒" },
+        { "code": "c8", "botzone": "B8", "name": "八筒" },
+        { "code": "c9", "botzone": "B9", "name": "九筒" }
+      ]
+    },
+    {
+      "kind": "winds",
+      "name": "风牌",
+      "majiangWorldPrefix": "d",
+      "botzonePrefix": "F",
+      "tiles": [
+        { "code": "d1", "botzone": "F1", "name": "东风" },
+        { "code": "d2", "botzone": "F2", "name": "南风" },
+        { "code": "d3", "botzone": "F3", "name": "西风" },
+        { "code": "d4", "botzone": "F4", "name": "北风" }
+      ]
+    },
+    {
+      "kind": "dragons",
+      "name": "三元牌",
+      "majiangWorldPrefix": "e",
+      "botzonePrefix": "J",
+      "tiles": [
+        { "code": "e1", "botzone": "J1", "name": "红中" },
+        { "code": "e2", "botzone": "J2", "name": "发财" },
+        { "code": "e3", "botzone": "J3", "name": "白板" }
+      ]
+    },
+    {
+      "kind": "flowers",
+      "name": "花牌",
+      "majiangWorldPrefix": "f",
+      "botzonePrefix": "H",
+      "tiles": [
+        { "code": "f1", "botzone": "H1", "name": "春" },
+        { "code": "f2", "botzone": "H2", "name": "夏" },
+        { "code": "f3", "botzone": "H3", "name": "秋" },
+        { "code": "f4", "botzone": "H4", "name": "冬" },
+        { "code": "f5", "botzone": "H5", "name": "梅" },
+        { "code": "f6", "botzone": "H6", "name": "兰" },
+        { "code": "f7", "botzone": "H7", "name": "竹" },
+        { "code": "f8", "botzone": "H8", "name": "菊" }
+      ]
+    }
+  ]
+}
