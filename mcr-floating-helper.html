@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#102f1d">
+<title>国标麻将 8 番悬浮助手</title>
+<style>
+:root {
+  --bg: #eef4ec;
+  --card: #fff;
+  --primary: #17633a;
+  --primary-dark: #102f1d;
+  --ok: #1b7f3a;
+  --warn: #d98200;
+  --bad: #c62828;
+  --text: #243127;
+  --text2: #66756b;
+  --border: #d6e1d8;
+  --tile: #fbfbf2;
+  --shadow: 0 10px 32px rgba(16,47,29,.18);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #dcebd8, var(--bg));
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 10px;
+}
+.float-card {
+  background: rgba(255,255,255,.96);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.header {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  color: #fff;
+  padding: 14px 16px;
+}
+.header h1 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.header p { margin: 5px 0 0; font-size: 12px; opacity: .82; }
+.section { padding: 12px; border-bottom: 1px solid var(--border); }
+.section:last-child { border-bottom: none; }
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.hint { color: var(--text2); font-size: 11px; font-weight: 400; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.tile-btn, .hand-tile {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--tile);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 27px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+.tile-btn:active, .btn:active { transform: scale(.96); }
+.tile-btn[disabled] {
+  color: #bbb;
+  background: #eee;
+  border-color: #ddd;
+  cursor: not-allowed;
+}
+.group-label {
+  width: 100%;
+  margin: 8px 0 3px;
+  color: var(--text2);
+  font-size: 12px;
+  text-align: left;
+}
+.hand-area {
+  min-height: 48px;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: #f7faf4;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+.hand-tile {
+  width: 34px;
+  height: 34px;
+  font-size: 24px;
+  border-color: #b9caba;
+  position: relative;
+}
+.hand-tile:hover { border-color: var(--primary); }
+.empty { color: #a5afa7; font-size: 12px; }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: #edf5ec;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn.primary { background: var(--primary); color: #fff; }
+.btn.warn { background: #fff1dc; color: var(--warn); }
+.btn.bad { background: #ffebee; color: var(--bad); }
+.opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+label.opt {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--text2);
+  font-size: 11px;
+}
+select, input[type="checkbox"] {
+  accent-color: var(--primary);
+}
+select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 7px;
+  color: var(--text);
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 12px;
+}
+.status {
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #f5f8f3;
+  border: 1px solid var(--border);
+}
+.status.ok { background: #e8f6ed; border-color: #b7dfc1; }
+.status.warn { background: #fff7e8; border-color: #f0d19a; }
+.status.bad { background: #ffebee; border-color: #ffc3ca; }
+.status h2 { margin: 0 0 5px; font-size: 16px; }
+.status p { margin: 0; color: var(--text2); font-size: 12px; line-height: 1.5; white-space: pre-line; }
+.fan-list, .rec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fan-item, .rec-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 9px;
+  background: #fff;
+}
+.fan-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.rec-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.rec-meta {
+  margin-top: 5px;
+  color: var(--text2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: #edf5ec;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+.badge.ok { background: #dff4e6; color: var(--ok); }
+.badge.warn { background: #fff0d8; color: var(--warn); }
+.badge.bad { background: #ffe2e6; color: var(--bad); }
+.note {
+  margin-top: 8px;
+  color: var(--text2);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.stat-card {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #f8fbf6;
+  padding: 8px;
+  text-align: center;
+}
+.stat-card strong { display: block; font-size: 16px; color: var(--primary); }
+.stat-card span { color: var(--text2); font-size: 11px; }
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.choice-btn {
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 4px;
+  background: #fff;
+  color: var(--text);
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.choice-btn.selected { border-color: var(--primary); background: #e9f5ed; color: var(--primary); }
+.choice-btn.correct { border-color: var(--ok); background: #dff4e6; color: var(--ok); }
+.choice-btn.wrong { border-color: var(--bad); background: #ffe2e6; color: var(--bad); }
+.mistake-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 9px;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mistake-item strong { color: var(--primary); }
+.tile-inline {
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1.45em;
+  line-height: .8;
+  vertical-align: -0.12em;
+}
+@media (min-width: 760px) {
+  .page { padding-top: 18px; }
+  .float-card { position: sticky; top: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="float-card">
+    <div class="header">
+      <h1><span>🀄 国标 8 番悬浮助手</span><button class="btn primary" onclick="openFloat()">弹出小窗</button></h1>
+      <p>本地计算手牌是否达 8 番，并按上听数、有效牌和潜在番数推荐出牌。</p>
+    </div>
+
+    <div class="section">
+      <div class="title">8 番训练器 <span class="hint">先猜出牌，再看答案</span></div>
+      <div class="mini-stats">
+        <div class="stat-card"><strong id="trainDone">0</strong><span>已练</span></div>
+        <div class="stat-card"><strong id="trainRight">0</strong><span>答对</span></div>
+        <div class="stat-card"><strong id="mistakeCount">0</strong><span>错题</span></div>
+      </div>
+      <div class="status" id="trainingPrompt">
+        <h2>点击“新题”开始</h2>
+        <p>系统会生成一副 14 张手牌，你先判断该打哪张，再查看推荐理由。</p>
+      </div>
+      <div id="trainingChoices" class="choice-grid"></div>
+      <div class="toolbar">
+        <button class="btn primary" onclick="newTrainingQuestion()">新题</button>
+        <button class="btn warn" onclick="revealTrainingAnswer()">看答案</button>
+        <button class="btn" onclick="toggleMistakes()">错题本</button>
+        <button class="btn bad" onclick="clearMistakes()">清错题</button>
+      </div>
+      <div id="trainingFeedback" class="note"></div>
+      <div id="mistakeBook" class="rec-list" style="display:none;margin-top:10px;"></div>
+    </div>
+
+    <div class="section">
+      <div class="title">
+        <span>当前手牌 <span id="tileCount" class="badge">0 / 14</span></span>
+        <span class="hint">自动按万/条/筒/字排序</span>
+      </div>
+      <div class="hand-area" id="handArea"></div>
+      <div class="toolbar">
+        <button class="btn" onclick="sortHand()">整理</button>
+        <button class="btn warn" onclick="loadExample()">示例</button>
+        <button class="btn bad" onclick="clearHand()">清空</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="title">牌面输入 <span class="hint">每张最多 4 枚</span></div>
+      <div id="tilePicker"></div>
+    </div>
+
+    <div class="section">
+      <div class="title">局况选项 <span class="hint">影响门风/圈风/自摸番</span></div>
+      <div class="opts">
+        <label class="opt">圈风
+          <select id="roundWind" onchange="renderResult()">
+            <option value="E">东</option><option value="S">南</option><option value="W">西</option><option value="N">北</option>
+          </select>
+        </label>
+        <label class="opt">门风
+          <select id="seatWind" onchange="renderResult()">
+            <option value="E">东</option><option value="S">南</option><option value="W">西</option><option value="N">北</option>
+          </select>
+        </label>
+      </div>
+      <div style="margin-top:8px" class="check-row">
+        <input id="selfDrawn" type="checkbox" onchange="renderResult()">
+        <label for="selfDrawn">按自摸计算</label>
+      </div>
+      <div class="note">当前版本按门清手牌估算常用番种；副露、花牌、杠、绝张等可在接入完整 C++/WASM 核心后扩展。</div>
+    </div>
+
+    <div class="section">
+      <div class="title">8 番提醒与推荐</div>
+      <div id="result"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TILES = [
+  ...['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏'].map((symbol, i) => ({ code: `${i + 1}m`, label: `${i + 1}万`, symbol, suit: 'm', rank: i + 1 })),
+  ...['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'].map((symbol, i) => ({ code: `${i + 1}s`, label: `${i + 1}条`, symbol, suit: 's', rank: i + 1 })),
+  ...['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'].map((symbol, i) => ({ code: `${i + 1}p`, label: `${i + 1}筒`, symbol, suit: 'p', rank: i + 1 })),
+  { code: 'E', label: '东', symbol: '🀀', suit: 'z', rank: 1 },
+  { code: 'S', label: '南', symbol: '🀁', suit: 'z', rank: 2 },
+  { code: 'W', label: '西', symbol: '🀂', suit: 'z', rank: 3 },
+  { code: 'N', label: '北', symbol: '🀃', suit: 'z', rank: 4 },
+  { code: 'C', label: '中', symbol: '🀄', suit: 'z', rank: 5 },
+  { code: 'F', label: '发', symbol: '🀅', suit: 'z', rank: 6 },
+  { code: 'P', label: '白', symbol: '🀆', suit: 'z', rank: 7 },
+];
+
+const TERMINAL_OR_HONOR = new Set([0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33]);
+const ORPHANS = new Set([0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33]);
+let counts = Array(34).fill(0);
+const TRAINING_KEY = 'mcr_helper_training_v1';
+const MISTAKE_KEY = 'mcr_helper_mistakes_v1';
+const TRAINING_BANK = [
+  { title: '清龙听牌路线', codes: ['1m','1m','2m','3m','4m','5m','6m','7m','8m','9m','2s','3s','4s','C'] },
+  { title: '花龙进张路线', codes: ['1m','2m','3m','4s','5s','6s','7p','8p','9p','3m','4m','5m','E','C'] },
+  { title: '七对判断路线', codes: ['1m','1m','2m','2m','3m','3m','4s','4s','5s','5s','6p','6p','E','C'] },
+  { title: '混一色取舍路线', codes: ['1p','2p','3p','4p','5p','6p','7p','8p','9p','E','E','C','C','F'] },
+  { title: '碰碰和取舍路线', codes: ['2m','2m','2m','5s','5s','5s','8p','8p','8p','E','E','C','F','P'] },
+  { title: '断幺平和路线', codes: ['2m','3m','4m','3m','4m','5m','4s','5s','6s','6p','7p','8p','E','C'] },
+];
+let trainingState = {
+  current: null,
+  answer: null,
+  selected: null,
+  revealed: false,
+  showMistakes: false,
+};
+let lastTrainingIndex = -1;
+
+function totalTiles(c = counts) {
+  return c.reduce((sum, n) => sum + n, 0);
+}
+
+function cloneCounts(c = counts) {
+  return c.slice();
+}
+
+function tileIndex(code) {
+  return TILES.findIndex(t => t.code === code);
+}
+
+function tileFace(i) {
+  return TILES[i]?.symbol || '';
+}
+
+function tileHtml(i) {
+  const tile = TILES[i];
+  return `<span class="tile-inline" title="${tile.label}" aria-label="${tile.label}">${tile.symbol}</span>`;
+}
+
+function countsFromCodes(codes) {
+  const result = Array(34).fill(0);
+  codes.forEach(code => {
+    const i = tileIndex(code);
+    if (i !== -1) result[i]++;
+  });
+  return result;
+}
+
+function handCodesFromCounts(c = counts) {
+  const codes = [];
+  c.forEach((n, i) => {
+    for (let k = 0; k < n; k++) codes.push(TILES[i].code);
+  });
+  return codes;
+}
+
+function setCountsFromCodes(codes) {
+  counts = countsFromCodes(codes);
+}
+
+function addTile(i) {
+  if (totalTiles() >= 14 || counts[i] >= 4) return;
+  counts[i]++;
+  render();
+}
+
+function removeTile(i) {
+  if (counts[i] <= 0) return;
+  counts[i]--;
+  render();
+}
+
+function handleHandTileClick(i) {
+  if (trainingState.current) {
+    selectTrainingDiscard(i);
+    return;
+  }
+  removeTile(i);
+}
+
+function clearHand() {
+  counts = Array(34).fill(0);
+  trainingState.current = null;
+  trainingState.answer = null;
+  trainingState.selected = null;
+  trainingState.revealed = false;
+  render();
+}
+
+function sortHand() {
+  render();
+}
+
+function loadExample() {
+  setCountsFromCodes(['1m','2m','3m','4m','5m','6m','7m','8m','9m','2s','3s','4s','C','C']);
+  document.getElementById('selfDrawn').checked = false;
+  render();
+}
+
+function openFloat() {
+  window.open(location.href, 'mcr_floating_helper', 'width=430,height=760,resizable=yes,scrollbars=yes');
+}
+
+function buildPicker() {
+  const groups = [
+    ['万子', 0, 9],
+    ['条子', 9, 18],
+    ['筒子', 18, 27],
+    ['字牌', 27, 34],
+  ];
+  const picker = document.getElementById('tilePicker');
+  picker.innerHTML = groups.map(([name, start, end]) => `
+    <div class="group-label">${name}</div>
+    <div class="row">
+      ${TILES.slice(start, end).map((tile, offset) => {
+        const i = start + offset;
+        const disabled = counts[i] >= 4 || totalTiles() >= 14 ? 'disabled' : '';
+        return `<button class="tile-btn" ${disabled} onclick="addTile(${i})" title="${tile.label}" aria-label="${tile.label}">${tile.symbol}</button>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
+function renderHand() {
+  const area = document.getElementById('handArea');
+  const items = [];
+  counts.forEach((n, i) => {
+    for (let k = 0; k < n; k++) {
+      items.push(`<button class="hand-tile" onclick="handleHandTileClick(${i})" title="${TILES[i].label}" aria-label="${TILES[i].label}">${tileFace(i)}</button>`);
+    }
+  });
+  area.innerHTML = items.length ? items.join('') : '<span class="empty">点击下方牌面录入手牌</span>';
+  document.getElementById('tileCount').textContent = `${totalTiles()} / 14`;
+}
+
+function render() {
+  buildPicker();
+  renderHand();
+  renderResult();
+  renderTraining();
+}
+
+function safeReadJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function safeWriteJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (_) {
+    // 本地文件模式通常可写；隐私模式不可写时只是不保存训练记录。
+  }
+}
+
+function getTrainingStats() {
+  return safeReadJson(TRAINING_KEY, { done: 0, right: 0 });
+}
+
+function saveTrainingStats(stats) {
+  safeWriteJson(TRAINING_KEY, stats);
+}
+
+function getMistakes() {
+  return safeReadJson(MISTAKE_KEY, []);
+}
+
+function saveMistakes(mistakes) {
+  safeWriteJson(MISTAKE_KEY, mistakes.slice(0, 30));
+}
+
+function newTrainingQuestion() {
+  let nextIndex = Math.floor(Math.random() * TRAINING_BANK.length);
+  if (TRAINING_BANK.length > 1 && nextIndex === lastTrainingIndex) {
+    nextIndex = (nextIndex + 1) % TRAINING_BANK.length;
+  }
+  lastTrainingIndex = nextIndex;
+  const item = TRAINING_BANK[nextIndex];
+  setCountsFromCodes(item.codes);
+  document.getElementById('selfDrawn').checked = false;
+  trainingState = {
+    current: { ...item, codes: item.codes.slice() },
+    answer: null,
+    selected: null,
+    revealed: false,
+    showMistakes: false,
+  };
+  const recs = recommendDiscards(counts, currentOptions());
+  trainingState.answer = recs[0] || null;
+  render();
+}
+
+function selectTrainingDiscard(tile) {
+  if (!trainingState.current || trainingState.revealed) return;
+  trainingState.selected = tile;
+  renderTraining();
+}
+
+function revealTrainingAnswer() {
+  if (!trainingState.current) {
+    newTrainingQuestion();
+    return;
+  }
+  if (trainingState.selected === null) {
+    document.getElementById('trainingFeedback').textContent = '先点一个你认为应该打出的牌，再看答案。';
+    return;
+  }
+  trainingState.revealed = true;
+  const stats = getTrainingStats();
+  stats.done += 1;
+  const isRight = trainingState.answer && trainingState.selected === trainingState.answer.discard;
+  if (isRight) {
+    stats.right += 1;
+  } else {
+    addMistake();
+  }
+  saveTrainingStats(stats);
+  renderTraining();
+}
+
+function addMistake() {
+  if (!trainingState.current || !trainingState.answer) return;
+  const mistakes = getMistakes();
+  mistakes.unshift({
+    time: Date.now(),
+    title: trainingState.current.title,
+    codes: handCodesFromCounts(),
+    selected: trainingState.selected,
+    answer: trainingState.answer.discard,
+    reason: explainRecommendation(trainingState.answer),
+  });
+  saveMistakes(mistakes);
+}
+
+function toggleMistakes() {
+  trainingState.showMistakes = !trainingState.showMistakes;
+  renderTraining();
+}
+
+function clearMistakes() {
+  saveMistakes([]);
+  trainingState.showMistakes = true;
+  renderTraining();
+}
+
+function loadMistake(index) {
+  const mistake = getMistakes()[index];
+  if (!mistake) return;
+  setCountsFromCodes(mistake.codes);
+  trainingState = {
+    current: { title: mistake.title, codes: mistake.codes.slice() },
+    answer: recommendDiscards(counts, currentOptions())[0] || null,
+    selected: mistake.selected,
+    revealed: true,
+    showMistakes: false,
+  };
+  render();
+}
+
+function renderTraining() {
+  const prompt = document.getElementById('trainingPrompt');
+  if (!prompt) return;
+  const stats = getTrainingStats();
+  const mistakes = getMistakes();
+  document.getElementById('trainDone').textContent = stats.done;
+  document.getElementById('trainRight').textContent = stats.right;
+  document.getElementById('mistakeCount').textContent = mistakes.length;
+
+  if (!trainingState.current) {
+    prompt.className = 'status';
+    prompt.innerHTML = '<h2>点击“新题”开始</h2><p>系统会生成一副 14 张手牌。训练模式下，点下方手牌或候选按钮都是选择答案，不会删除牌。</p>';
+    document.getElementById('trainingChoices').innerHTML = '';
+    document.getElementById('trainingFeedback').textContent = '';
+    renderMistakeBook(mistakes);
+    return;
+  }
+
+  const selected = trainingState.selected;
+  const answer = trainingState.answer;
+  const isRight = trainingState.revealed && answer && selected === answer.discard;
+  prompt.className = `status ${trainingState.revealed ? (isRight ? 'ok' : 'bad') : 'warn'}`;
+  prompt.innerHTML = `
+    <h2>${trainingState.current.title}</h2>
+    <p>${trainingState.revealed
+      ? (answer ? (isRight ? '答对了，继续保持这种牌效判断。' : `答错了，推荐打 ${tileHtml(answer.discard)}。`) : '这题暂时没有可用推荐。')
+      : '本题手牌已填在下方。点手牌或候选按钮选择你认为最该打出的牌，然后点“看答案”。'}</p>
+  `;
+
+  const uniqueTiles = counts.map((n, i) => n > 0 ? i : -1).filter(i => i !== -1);
+  document.getElementById('trainingChoices').innerHTML = uniqueTiles.map(i => {
+    let cls = 'choice-btn';
+    if (selected === i) cls += ' selected';
+    if (trainingState.revealed && answer && i === answer.discard) cls += ' correct';
+    if (trainingState.revealed && selected === i && answer && i !== answer.discard) cls += ' wrong';
+    return `<button class="${cls}" onclick="selectTrainingDiscard(${i})" title="${TILES[i].label}" aria-label="${TILES[i].label}">${tileFace(i)}</button>`;
+  }).join('');
+
+  document.getElementById('trainingFeedback').innerHTML = trainingState.revealed && answer
+    ? `<strong>答案解析：</strong>${explainRecommendation(answer)}`
+    : '训练思路：优先看能不能听牌，再看有效牌数量，最后看摸到哪些牌能满足 8 番。';
+  renderMistakeBook(mistakes);
+}
+
+function renderMistakeBook(mistakes = getMistakes()) {
+  const book = document.getElementById('mistakeBook');
+  if (!book) return;
+  if (!trainingState.showMistakes) {
+    book.style.display = 'none';
+    book.innerHTML = '';
+    return;
+  }
+  book.style.display = 'flex';
+  if (mistakes.length === 0) {
+    book.innerHTML = '<div class="mistake-item">暂无错题。做题答错后会自动保存到这里。</div>';
+    return;
+  }
+  book.innerHTML = mistakes.map((m, idx) => `
+    <div class="mistake-item">
+      <strong>${idx + 1}. ${m.title}</strong><br>
+      你打：${m.selected === null ? '未选择' : tileHtml(m.selected)}；推荐：${tileHtml(m.answer)}<br>
+      ${m.reason}<br>
+      <button class="btn" onclick="loadMistake(${idx})" style="margin-top:6px;">重练这题</button>
+    </div>
+  `).join('');
+}
+
+function isNumberTile(i) {
+  return i >= 0 && i < 27;
+}
+
+function tileSuitIndex(i) {
+  return Math.floor(i / 9);
+}
+
+function tileRank(i) {
+  return i % 9 + 1;
+}
+
+function canChow(c, i) {
+  return isNumberTile(i) && tileRank(i) <= 7 && c[i] > 0 && c[i + 1] > 0 && c[i + 2] > 0;
+}
+
+function enumerateStandardGroups(c) {
+  const results = [];
+  for (let pair = 0; pair < 34; pair++) {
+    if (c[pair] < 2) continue;
+    const next = c.slice();
+    next[pair] -= 2;
+    searchGroups(next, [{ type: 'pair', tile: pair }]);
+  }
+  return results;
+
+  function searchGroups(work, groups) {
+    const first = work.findIndex(n => n > 0);
+    if (first === -1) {
+      if (groups.length === 5) results.push(groups.slice());
+      return;
+    }
+    if (groups.length >= 5) return;
+
+    if (work[first] >= 3) {
+      work[first] -= 3;
+      groups.push({ type: 'pung', tile: first });
+      searchGroups(work, groups);
+      groups.pop();
+      work[first] += 3;
+    }
+
+    if (canChow(work, first)) {
+      work[first]--;
+      work[first + 1]--;
+      work[first + 2]--;
+      groups.push({ type: 'chow', tile: first + 1, start: first });
+      searchGroups(work, groups);
+      groups.pop();
+      work[first]++;
+      work[first + 1]++;
+      work[first + 2]++;
+    }
+  }
+}
+
+function isSevenPairs(c) {
+  return totalTiles(c) === 14 && c.filter(n => n === 2).length === 7;
+}
+
+function isSevenShiftedPairs(c) {
+  if (!isSevenPairs(c)) return false;
+  for (const start of [0, 9, 18]) {
+    let ok = true;
+    for (let i = 0; i < 7; i++) {
+      if (c[start + i] !== 2) ok = false;
+    }
+    if (ok) return true;
+  }
+  return false;
+}
+
+function isThirteenOrphans(c) {
+  if (totalTiles(c) !== 14) return false;
+  let pair = false;
+  for (let i = 0; i < 34; i++) {
+    if (!ORPHANS.has(i) && c[i] > 0) return false;
+    if (ORPHANS.has(i)) {
+      if (c[i] === 0) return false;
+      if (c[i] === 2) pair = true;
+      if (c[i] > 2) return false;
+    }
+  }
+  return pair;
+}
+
+function evaluateHand(c, options) {
+  if (totalTiles(c) !== 14) {
+    return { isWin: false, points: 0, fans: [], note: '需要 14 张牌才能判断是否和牌。' };
+  }
+
+  const candidates = [];
+  if (isThirteenOrphans(c)) {
+    candidates.push({ points: 88 + selfDrawFan(options), fans: withSelfDraw([{ name: '十三幺', points: 88 }], options) });
+  }
+  if (isSevenShiftedPairs(c)) {
+    candidates.push({ points: 88 + selfDrawFan(options), fans: withSelfDraw([{ name: '连七对', points: 88 }], options) });
+  } else if (isSevenPairs(c)) {
+    const fans = [{ name: '七对', points: 24 }, ...shapeFans(c, null, options)];
+    candidates.push(normalizeFans(fans, options));
+  }
+
+  const decomps = enumerateStandardGroups(c);
+  for (const groups of decomps) {
+    candidates.push(normalizeFans(shapeFans(c, groups, options), options));
+  }
+
+  if (candidates.length === 0) {
+    return { isWin: false, points: 0, fans: [], note: '当前 14 张暂未构成和牌。' };
+  }
+  candidates.sort((a, b) => b.points - a.points);
+  return { isWin: true, ...candidates[0] };
+}
+
+function selfDrawFan(options) {
+  return options.selfDrawn ? 1 : 0;
+}
+
+function withSelfDraw(fans, options) {
+  return options.selfDrawn ? [...fans, { name: '自摸', points: 1 }] : fans;
+}
+
+function normalizeFans(fans, options) {
+  const list = fans.slice();
+  if (options.selfDrawn) list.push({ name: '自摸', points: 1 });
+  if (list.length === 0) list.push({ name: '无番和', points: 8 });
+  const seen = new Set();
+  const deduped = list.filter(fan => {
+    const key = fan.name;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return { points: deduped.reduce((sum, fan) => sum + fan.points, 0), fans: deduped };
+}
+
+function shapeFans(c, groups, options) {
+  const fans = [];
+  const usedSuits = new Set();
+  let honors = 0;
+  let terminals = 0;
+  let simples = 0;
+  for (let i = 0; i < 34; i++) {
+    if (!c[i]) continue;
+    const tile = TILES[i];
+    if (tile.suit === 'z') honors += c[i];
+    else {
+      usedSuits.add(tile.suit);
+      if (tile.rank === 1 || tile.rank === 9) terminals += c[i];
+      else simples += c[i];
+    }
+  }
+
+  if (honors === 14) fans.push({ name: '字一色', points: 64 });
+  if (terminals === 14) fans.push({ name: '清幺九', points: 64 });
+  if (terminals + honors === 14 && terminals > 0 && honors > 0) fans.push({ name: '混幺九', points: 32 });
+  if (usedSuits.size === 1 && honors === 0) fans.push({ name: '清一色', points: 24 });
+  if (usedSuits.size === 1 && honors > 0) fans.push({ name: '混一色', points: 6 });
+  if (terminals === 0 && honors === 0) fans.push({ name: '断幺', points: 2 });
+  if (honors === 0) fans.push({ name: '无字', points: 1 });
+  if (usedSuits.size <= 2) fans.push({ name: '缺一门', points: 1 });
+  if (!groups) {
+    fans.push({ name: '门前清', points: 2 });
+    return fans;
+  }
+
+  const pungs = groups.filter(g => g.type === 'pung');
+  const chows = groups.filter(g => g.type === 'chow');
+  if (pungs.length === 4) fans.push({ name: '碰碰和', points: 6 });
+  if (chows.length === 4) fans.push({ name: '平和', points: 2 });
+  if (hasPureStraight(chows)) fans.push({ name: '清龙', points: 16 });
+  if (hasMixedStraight(chows)) fans.push({ name: '花龙', points: 8 });
+
+  for (const pung of pungs) {
+    const tile = TILES[pung.tile];
+    if (['C', 'F', 'P'].includes(tile.code)) fans.push({ name: `箭刻(${tile.symbol})`, points: 2 });
+    if (tile.code === options.roundWind) fans.push({ name: '圈风刻', points: 2 });
+    if (tile.code === options.seatWind) fans.push({ name: '门风刻', points: 2 });
+    if (TERMINAL_OR_HONOR.has(pung.tile)) fans.push({ name: `幺九刻(${tile.symbol})`, points: 1 });
+  }
+
+  fans.push({ name: '门前清', points: 2 });
+  return fans;
+}
+
+function hasPureStraight(chows) {
+  const bySuit = new Map();
+  for (const chow of chows) {
+    const suit = TILES[chow.tile].suit;
+    if (!bySuit.has(suit)) bySuit.set(suit, new Set());
+    bySuit.get(suit).add(tileRank(chow.start));
+  }
+  for (const starts of bySuit.values()) {
+    if (starts.has(1) && starts.has(4) && starts.has(7)) return true;
+  }
+  return false;
+}
+
+function hasMixedStraight(chows) {
+  const needed = [
+    { start: 1, suits: new Set() },
+    { start: 4, suits: new Set() },
+    { start: 7, suits: new Set() },
+  ];
+  for (const chow of chows) {
+    const startRank = tileRank(chow.start);
+    const item = needed.find(n => n.start === startRank);
+    if (item) item.suits.add(TILES[chow.tile].suit);
+  }
+  if (needed.some(n => n.suits.size === 0)) return false;
+  for (const a of needed[0].suits) {
+    for (const b of needed[1].suits) {
+      for (const d of needed[2].suits) {
+        if (new Set([a, b, d]).size === 3) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function regularShanten(c) {
+  let best = 8;
+  const memo = new Set();
+  dfs(c.slice(), 0, 0, 0);
+  return best;
+
+  function dfs(work, melds, pairs, taatsu) {
+    const key = `${work.join('')}:${melds}:${pairs}:${taatsu}`;
+    if (memo.has(key)) return;
+    memo.add(key);
+    const first = work.findIndex(n => n > 0);
+    if (first === -1) {
+      const fixedTaatsu = Math.min(taatsu, 4 - melds);
+      best = Math.min(best, 8 - melds * 2 - fixedTaatsu - (pairs > 0 ? 1 : 0));
+      return;
+    }
+
+    work[first]--;
+    dfs(work, melds, pairs, taatsu);
+    work[first]++;
+
+    if (work[first] >= 3) {
+      work[first] -= 3;
+      dfs(work, melds + 1, pairs, taatsu);
+      work[first] += 3;
+    }
+    if (canChow(work, first)) {
+      work[first]--;
+      work[first + 1]--;
+      work[first + 2]--;
+      dfs(work, melds + 1, pairs, taatsu);
+      work[first]++;
+      work[first + 1]++;
+      work[first + 2]++;
+    }
+    if (work[first] >= 2) {
+      work[first] -= 2;
+      dfs(work, melds, pairs + 1, taatsu);
+      dfs(work, melds, pairs, taatsu + 1);
+      work[first] += 2;
+    }
+    if (isNumberTile(first) && tileRank(first) <= 8 && work[first + 1] > 0) {
+      work[first]--;
+      work[first + 1]--;
+      dfs(work, melds, pairs, taatsu + 1);
+      work[first]++;
+      work[first + 1]++;
+    }
+    if (isNumberTile(first) && tileRank(first) <= 7 && work[first + 2] > 0) {
+      work[first]--;
+      work[first + 2]--;
+      dfs(work, melds, pairs, taatsu + 1);
+      work[first]++;
+      work[first + 2]++;
+    }
+  }
+}
+
+function sevenPairsShanten(c) {
+  const pairs = c.filter(n => n >= 2).length;
+  const unique = c.filter(n => n > 0).length;
+  return 6 - pairs + Math.max(0, 7 - unique);
+}
+
+function orphanShanten(c) {
+  let unique = 0;
+  let pair = false;
+  for (const i of ORPHANS) {
+    if (c[i] > 0) unique++;
+    if (c[i] > 1) pair = true;
+  }
+  return 13 - unique - (pair ? 1 : 0);
+}
+
+function minShanten(c) {
+  if (totalTiles(c) % 3 === 2 && evaluateHand(c, currentOptions()).isWin) return -1;
+  return Math.min(regularShanten(c), sevenPairsShanten(c), orphanShanten(c));
+}
+
+function usefulAfterDiscard(c13) {
+  const current = minShanten(c13);
+  const useful = [];
+  for (let i = 0; i < 34; i++) {
+    if (c13[i] >= 4) continue;
+    c13[i]++;
+    const next = minShanten(c13);
+    if (next < current) useful.push(i);
+    c13[i]--;
+  }
+  return { current, useful };
+}
+
+function bestWinAfterDraw(c13, options) {
+  let best = null;
+  for (let i = 0; i < 34; i++) {
+    if (c13[i] >= 4) continue;
+    c13[i]++;
+    const evalResult = evaluateHand(c13, options);
+    c13[i]--;
+    if (!evalResult.isWin) continue;
+    if (!best || evalResult.points > best.points) {
+      best = { tile: i, ...evalResult };
+    }
+  }
+  return best;
+}
+
+function recommendDiscards(c, options) {
+  if (totalTiles(c) !== 14) return [];
+  const recs = [];
+  for (let i = 0; i < 34; i++) {
+    if (c[i] === 0) continue;
+    const work = c.slice();
+    work[i]--;
+    const usefulInfo = usefulAfterDiscard(work);
+    const available = usefulInfo.useful.reduce((sum, tile) => sum + Math.max(0, 4 - work[tile]), 0);
+    const bestWin = bestWinAfterDraw(work, options);
+    const fanBonus = bestWin ? Math.min(bestWin.points, 24) : 0;
+    const score = -usefulInfo.current * 100 + available * 3 + fanBonus + (bestWin && bestWin.points >= 8 ? 18 : 0);
+    recs.push({ discard: i, shanten: usefulInfo.current, useful: usefulInfo.useful, available, bestWin, score });
+  }
+  return recs.sort((a, b) => b.score - a.score).slice(0, 6);
+}
+
+function currentOptions() {
+  return {
+    roundWind: document.getElementById('roundWind')?.value || 'E',
+    seatWind: document.getElementById('seatWind')?.value || 'E',
+    selfDrawn: !!document.getElementById('selfDrawn')?.checked,
+  };
+}
+
+function shantenText(n) {
+  if (n < 0) return '已和';
+  if (n === 0) return '听牌';
+  return `${n} 上听`;
+}
+
+function renderResult() {
+  const result = document.getElementById('result');
+  if (!result) return;
+  const n = totalTiles();
+  const options = currentOptions();
+  if (n === 0) {
+    result.innerHTML = `<div class="status"><h2>等待录入</h2><p>录入 14 张牌后判断是否达到 8 番；录入到 14 张也会给出推荐出牌。</p></div>`;
+    return;
+  }
+  if (n !== 14) {
+    result.innerHTML = `<div class="status warn"><h2>还差 ${14 - n} 张</h2><p>当前 ${n} 张。补齐 14 张后开始判断和推荐。</p></div>`;
+    return;
+  }
+
+  const evalResult = evaluateHand(counts, options);
+  const recs = recommendDiscards(counts, options);
+  const statusClass = evalResult.isWin ? (evalResult.points >= 8 ? 'ok' : 'bad') : 'warn';
+  const statusTitle = evalResult.isWin
+    ? (evalResult.points >= 8 ? `可和：${evalResult.points} 番，满足 8 番` : `可和：${evalResult.points} 番，未满 8 番`)
+    : '当前未和，给出出牌推荐';
+  const statusText = evalResult.isWin
+    ? `估算番型：${evalResult.fans.map(f => `${f.name}${f.points}`).join('、')}`
+    : evalResult.note;
+
+  result.innerHTML = `
+    <div class="status ${statusClass}">
+      <h2>${statusTitle}</h2>
+      <p>${statusText}</p>
+    </div>
+    ${evalResult.isWin ? renderFans(evalResult.fans) : ''}
+    ${renderRecommendations(recs)}
+    <div class="note">提示：这是常用番型估算和打法提醒，适合作为悬浮辅助；严格全番种裁定建议后续接入完整国标 C++/WASM 核心。</div>
+  `;
+}
+
+function renderFans(fans) {
+  return `<div class="fan-list">${fans.map(fan => `
+    <div class="fan-item"><span>${fan.name}</span><strong>${fan.points} 番</strong></div>
+  `).join('')}</div>`;
+}
+
+function explainRecommendation(rec) {
+  if (!rec) return '暂无推荐理由。';
+  const usefulLabels = rec.useful.slice(0, 12).map(i => tileHtml(i)).join('、') || '暂无';
+  const more = rec.useful.length > 12 ? '…' : '';
+  const best = rec.bestWin
+    ? `摸 ${tileHtml(rec.bestWin.tile)} 可按最高 ${rec.bestWin.points} 番估算${rec.bestWin.points >= 8 ? '，可过 8 番' : '，未满 8 番'}。`
+    : '下一手暂无直接 8 番和牌提示。';
+  return `推荐打 ${tileHtml(rec.discard)}：${shantenText(rec.shanten)}，有效牌 ${rec.available} 枚（${usefulLabels}${more}）。${best}`;
+}
+
+function renderRecommendations(recs) {
+  if (!recs.length) return '';
+  return `<div class="rec-list" style="margin-top:10px">
+    ${recs.map((rec, idx) => {
+      const usefulLabels = rec.useful.slice(0, 12).map(i => tileHtml(i)).join('、') || '暂无';
+      const best = rec.bestWin
+        ? `摸 ${tileHtml(rec.bestWin.tile)} 可按最高 ${rec.bestWin.points} 番估算${rec.bestWin.points >= 8 ? '，可过 8 番' : '，未满 8 番'}`
+        : '下一手暂无直接 8 番和牌提示';
+      const badgeClass = rec.bestWin && rec.bestWin.points >= 8 ? 'ok' : (rec.shanten === 0 ? 'warn' : '');
+      return `
+        <div class="rec-item">
+          <div class="rec-head">
+            <span>${idx + 1}. 打 ${tileHtml(rec.discard)}</span>
+            <span class="badge ${badgeClass}">${shantenText(rec.shanten)}</span>
+          </div>
+          <div class="rec-meta">
+            有效牌：${rec.available} 枚（${usefulLabels}${rec.useful.length > 12 ? '…' : ''}）<br>
+            ${best}
+          </div>
+        </div>
+      `;
+    }).join('')}
+  </div>`;
+}
+
+buildPicker();
+renderHand();
+renderResult();
+</script>
+</body>
+</html>
