@@ -260,7 +260,8 @@ async function persistRecords(options = {}) {
   if (!cloudSyncReady) return;
   if (isGithubSyncEnabled()) {
     try {
-      const merged = await uploadGithubRecords(records);
+      const uploadOptions = options.deletedId ? { deletedIds: [options.deletedId] } : {};
+      const merged = await uploadGithubRecords(records, uploadOptions);
       records = merged;
       saveRecordsLocal(records);
       updateCloudStatus('synced');

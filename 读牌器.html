@@ -126,6 +126,22 @@ body {
 }
 .btn-sm.reset { background: #eee; color: #666; }
 .btn-sm.undo { background: #fff3e0; color: #e65100; }
+
+.guesser-card {
+  background: var(--card); border-radius: var(--radius); padding: 12px;
+  margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.guesser-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.guesser-desc { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.guesser-table-wrap { overflow-x: auto; }
+.guesser-table {
+  width: 100%; border-collapse: collapse; font-size: 12px; min-width: 620px;
+}
+.guesser-table th, .guesser-table td {
+  border-bottom: 1px solid #eee; padding: 7px 6px; text-align: left; vertical-align: top;
+}
+.guesser-table th { color: var(--text2); font-weight: 600; background: #fafaf6; }
+.guesser-table tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -136,6 +152,7 @@ body {
 <div class="mode-tabs">
   <button class="mode-tab active" id="modeRead" onclick="switchMode('read')">🔍 读牌</button>
   <button class="mode-tab" id="modeCalc" onclick="switchMode('calc')">🤖 算牌推荐</button>
+  <button class="mode-tab" id="modeGuess" onclick="switchMode('guess')">🧠 猜牌器</button>
 </div>
 
 <!-- ===== READ MODE ===== -->
@@ -202,6 +219,17 @@ body {
 </div>
 </div>
 
+<!-- ===== GUESS MODE ===== -->
+<div id="guessMode" style="display:none;">
+  <div class="guesser-card">
+    <div class="guesser-title">🧠 顺位出牌猜牌器（万子）</div>
+    <div class="guesser-desc">
+      场景：对手手牌按顺序摆整齐。分别模拟“从第1张位打出1~9万”和“从第2张位打出1~9万”，每一行给出可直接参考的判断结论。
+    </div>
+  </div>
+  <div id="guessModeContent"></div>
+</div>
+
 <script>
 // ===== TILE DATA =====
 const WAN = ['1万','2万','3万','4万','5万','6万','7万','8万','9万'];
@@ -252,10 +280,13 @@ function switchMode(m) {
   mode = m;
   document.getElementById('modeRead').classList.toggle('active', m==='read');
   document.getElementById('modeCalc').classList.toggle('active', m==='calc');
+  document.getElementById('modeGuess').classList.toggle('active', m==='guess');
   document.getElementById('readMode').style.display = m==='read'?'block':'none';
   document.getElementById('calcMode').style.display = m==='calc'?'block':'none';
+  document.getElementById('guessMode').style.display = m==='guess'?'block':'none';
   if (m === 'read') { renderAllTiles(); renderAnalysis(); renderHistory(); }
   if (m === 'calc') { renderCalcTiles(); renderRecommendation(); }
+  if (m === 'guess') { renderOrderedGuesser(); }
 }
 
 // ===== READ MODE =====
@@ -606,9 +637,96 @@ function renderRecommendation() {
   }
 }
 
+// ===== ORDERED DISCARD GUESSER =====
+function rankToWan(rank) {
+  return rank + '万';
+}
+
+function buildOrderedLikelyNo(rank, slot) {
+  const blocked = new Set();
+  blocked.add(rank);
+  if (slot === 1) {
+    for (let r = 1; r < rank; r++) blocked.add(r);
+    if (rank + 1 <= 9) blocked.add(rank + 1);
+    if (rank + 2 <= 9) blocked.add(rank + 2);
+  } else {
+    if (rank - 1 >= 1) blocked.add(rank - 1);
+    if (rank + 1 <= 9) blocked.add(rank + 1);
+  }
+  return [...blocked].sort((a, b) => a - b);
+}
+
+function buildOrderedConclusion(rank, slot) {
+  const likelyNo = buildOrderedLikelyNo(rank, slot);
+  const likelyNoTiles = likelyNo.map(rankToWan);
+  const keepTiles = [];
+  for (let r = 1; r <= 9; r++) {
+    if (!likelyNo.includes(r)) keepTiles.push(rankToWan(r));
+  }
+
+  let verdict = '';
+  if (slot === 1) {
+    verdict = `首位打${rankToWan(rank)}：小于它的万子通常已清空，且${rankToWan(rank)}附近连张意愿低，偏向保留远端搭子。`;
+  } else {
+    verdict = `第二位打${rankToWan(rank)}：左侧仍保留一张更小牌，${rankToWan(rank)}常是断点张，附近组合价值下降。`;
+  }
+
+  return {
+    discard: rankToWan(rank),
+    likelyNo: likelyNoTiles.join('、') || '-',
+    keep: keepTiles.join('、') || '-',
+    verdict: verdict
+  };
+}
+
+function renderScenarioTable(slot) {
+  const title = slot === 1 ? '场景A：从第1张位依次打出1~9万' : '场景B：从第2张位依次打出1~9万';
+  const tip = slot === 1
+    ? '规则重点：第1张位被打出时，视为该牌左侧万子已基本处理。'
+    : '规则重点：第2张位被打出时，视为左侧仍留一个更小锚点。';
+  const rows = [];
+  for (let rank = 1; rank <= 9; rank++) {
+    rows.push(buildOrderedConclusion(rank, slot));
+  }
+  const body = rows.map(r => `
+    <tr>
+      <td>${r.discard}</td>
+      <td>${r.likelyNo}</td>
+      <td>${r.keep}</td>
+      <td>${r.verdict}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="guesser-card">
+      <div class="guesser-title">${title}</div>
+      <div class="guesser-desc">${tip}</div>
+      <div class="guesser-table-wrap">
+        <table class="guesser-table">
+          <thead>
+            <tr>
+              <th style="width:56px;">打出</th>
+              <th style="width:210px;">大概率没有</th>
+              <th style="width:180px;">可能保留</th>
+              <th>结论</th>
+            </tr>
+          </thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderOrderedGuesser() {
+  const container = document.getElementById('guessModeContent');
+  container.innerHTML = renderScenarioTable(1) + renderScenarioTable(2);
+}
+
 // ===== INIT =====
 renderAllTiles();
 renderAnalysis();
+renderOrderedGuesser();
 </script>
 </body>
 </html>
