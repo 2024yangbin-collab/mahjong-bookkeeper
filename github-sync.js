@@ -105,7 +105,7 @@ async function putGithubRecords(list, sha) {
     records: list
   };
   const body = {
-    message: '麻将馆记账同步 ' + new Date().toLocaleString('zh-CN'),
+    message: '雀牌地图同步 ' + new Date().toLocaleString('zh-CN'),
     content: toBase64Utf8(JSON.stringify(payload, null, 2)),
     branch: GITHUB_SYNC.branch
   };

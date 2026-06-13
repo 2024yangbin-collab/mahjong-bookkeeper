@@ -1,5 +1,5 @@
 ﻿/**
- * 麻将馆记账本 - Supabase 云端同步
+ * 雀牌地图（岳阳攻防麻将）- Supabase 云端同步
  */
 let supabaseClient = null;
 let cloudSyncReady = false;
